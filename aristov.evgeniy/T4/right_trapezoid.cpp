@@ -46,7 +46,7 @@ std::string RightTrapezoid::getName() const {
 
 FrameRect RightTrapezoid::getFrameRect() const {
     double maxWidth = std::max(bottomBase_, topBase_);
-    return {maxWidth, height_, {bottomLeft_.x + maxWidth / 2.0, bottomLeft_.y + height_ / 2.0}};
+    return {maxWidth, height_, {bottomLeft_.x + maxWidth / 2.0, getCenter().y}};
 }
 
 std::string RightTrapezoid::toString() const {
