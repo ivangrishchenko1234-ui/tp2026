@@ -36,29 +36,23 @@ int main() {
         if (cmd == "RECTANGLE") {
             double x1, y1, x2, y2;
             if (std::cin >> x1 >> y1 >> x2 >> y2) {
-                try {
-                    shapes.push_back(std::make_shared<Rectangle>(Point{x1, y1}, Point{x2, y2}));
-                } catch (...) {}
+                try { shapes.push_back(std::make_shared<Rectangle>(Point{x1, y1}, Point{x2, y2})); } catch (...) {}
             }
         } else if (cmd == "CIRCLE") {
             double x, y, r;
             if (std::cin >> x >> y >> r) {
-                try {
-                    shapes.push_back(std::make_shared<Circle>(Point{x, y}, r));
-                } catch (...) {}
+                try { shapes.push_back(std::make_shared<Circle>(Point{x, y}, r)); } catch (...) {}
             }
         } else if (cmd == "RECTANGLE_TRAPEZOID") {
             double x, y, bw, tw, h;
             if (std::cin >> x >> y >> bw >> tw >> h) {
-                try {
-                    shapes.push_back(std::make_shared<RectangleTrapezoid>(Point{x, y}, bw, tw, h));
-                } catch (...) {}
+                try { shapes.push_back(std::make_shared<RectangleTrapezoid>(Point{x, y}, bw, tw, h)); } catch (...) {}
             }
         } else if (cmd == "SCALE") {
             double cx, cy, f;
             if (std::cin >> cx >> cy >> f) {
-                if (shapes.empty()) {
-                    std::cerr << "Error: No shapes to scale\n";
+                if (f <= 0.0) {
+                    std::cerr << "Error: Scale factor must be positive\n";
                     return 1;
                 }
                 bool hasComp = false;
@@ -76,14 +70,13 @@ int main() {
                     shapes.pop_back();
                     shapes.push_back(comp);
                 }
+
                 for (const auto& s : shapes) {
                     printShape(*s);
                 }
                 std::cout << "\n";
                 for (auto& s : shapes) {
-                    try {
-                        s->scale(f);
-                    } catch (...) {}
+                    try { s->scale(f); } catch (...) {}
                     printShape(*s);
                 }
                 scaled = true;
@@ -92,8 +85,11 @@ int main() {
         }
     }
 
-    if (shapes.empty() || !scaled) {
-        std::cerr << "Error: Invalid input or no scaling performed\n";
+    if (!scaled) {
+        for (const auto& s : shapes) {
+            printShape(*s);
+        }
+        std::cerr << "Error: No scaling performed\n";
         return 1;
     }
 
