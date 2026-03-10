@@ -16,7 +16,7 @@ void printShapeInfo(const Shape& shape) {
 }
 
 int main() {
-    std::cout << "Shapes descripton without scaling\n";
+    std::cout << "Shapes descripton withot scaling\n";
 
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "=== GEOMETRIC SHAPES ===\n\n";
