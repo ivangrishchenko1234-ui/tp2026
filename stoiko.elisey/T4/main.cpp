@@ -35,23 +35,24 @@ int main() {
     compositePtr->addShape(std::make_unique<Ellipse>(Point(15, 15), 3.0, 2.0));
     shapes.push_back(std::move(compositePtr));
 
+    double factor;
+    std::cout << "factor: ";
+    if (!(std::cin >> factor)) {
+        std::cerr << "ERROR: No input provided!\n";
+        return 1;
+    }
+
     std::cout << "\n--- before ---\n";
     printInfo(shapes, std::cout);
 
     for (const auto& shape_ptr : shapes) {
         if (shape_ptr) {
-            shape_ptr->scale(2.0);
+            shape_ptr->scale(factor);
         }
     }
 
     std::cout << "\n--- after ---\n";
     printInfo(shapes, std::cout);
-
-    std::string in;
-    if (!(std::cin >> in)) {
-        std::cerr << "ERROR: No input provided!\n";
-        return 1;
-    }
 
     return 0;
 }
