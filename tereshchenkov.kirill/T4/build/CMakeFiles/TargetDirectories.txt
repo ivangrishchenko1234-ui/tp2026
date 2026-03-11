@@ -1,0 +1,6 @@
+/home/lirik/T4/build/CMakeFiles/shapes_app.dir
+/home/lirik/T4/build/CMakeFiles/edit_cache.dir
+/home/lirik/T4/build/CMakeFiles/rebuild_cache.dir
+/home/lirik/T4/build/lib/CMakeFiles/shapes_lib.dir
+/home/lirik/T4/build/lib/CMakeFiles/edit_cache.dir
+/home/lirik/T4/build/lib/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libshapes_lib.a CMakeFiles/shapes_lib.dir/rectangle.cpp.o CMakeFiles/shapes_lib.dir/ring.cpp.o CMakeFiles/shapes_lib.dir/trap.cpp.o CMakeFiles/shapes_lib.dir/complex.cpp.o
+/usr/bin/ranlib libshapes_lib.a

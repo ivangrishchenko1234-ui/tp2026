@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/shapes.dir/main.cpp.o -o shapes  lib/libshapes_lib.a 
