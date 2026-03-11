@@ -45,7 +45,7 @@ void printShapesInfo(const std::vector<std::unique_ptr<Shape>>& shapes) {
 int main() {
     double factor;
     if (!(std::cin >> factor)) {
-        std::cerr << "Shapes descripton withot scaling, non-zero exit code and error message in standard error" << std::endl;
+        std::cerr << "Shapes description without scaling, non-zero exit code and error message in standard error." << std::endl;
         return 2;
     }
     std::vector<std::unique_ptr<Shape>> shapes;
