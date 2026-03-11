@@ -76,7 +76,7 @@ int main() {
             std::cout << "OUTSIDE" << std::endl;
         }
     }
-    std::cout << "\n=== BONUS 2: PERIMETER TEST ===" << std::endl;  
+    std::cout << "\n=== BONUS 2: PERIMETER TEST ===" << std::endl;
     std::cout << "Perimeter of each shape:" << std::endl;
     for (size_t i = 0; i < shapes.size(); ++i) {
         std::cout << " Shape " << i << " (" << shapes[i]->getName() << "): "
