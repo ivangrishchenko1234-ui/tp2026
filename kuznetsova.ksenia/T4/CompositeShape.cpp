@@ -10,11 +10,7 @@ void CompositeShape::addShape(std::unique_ptr<Shape> shape) {
 
 Shape* CompositeShape::getShape(size_t index) const {
     if (index >= shapes_.size()) {
-<<<<<<< HEAD
         throw std::out_of_range("Index out of range");
-=======
-        throw std::out_of_range("Индекс вне диапазона");
->>>>>>> main
     }
     return shapes_[index].get();
 }
@@ -31,11 +27,7 @@ void CompositeShape::getBoundingBox(Point& min, Point& max) const {
     max.x = -std::numeric_limits<double>::max();
     max.y = -std::numeric_limits<double>::max();
 
-<<<<<<< HEAD
     // Iterate through all shapes and find their centers
-=======
-    // Проходим по всем фигурам и находим их центры
->>>>>>> main
     for (const auto& shape : shapes_) {
         Point center = shape->getCenter();
         min.x = std::min(min.x, center.x);
@@ -54,11 +46,7 @@ double CompositeShape::getArea() const {
 }
 
 Point CompositeShape::getCenter() const {
-<<<<<<< HEAD
     // Center of bounding box based on shape centers
-=======
-    //центр ограничивающего прямоугольника по центрам фигур
->>>>>>> main
     Point min, max;
     getBoundingBox(min, max);
     return Point((min.x + max.x) / 2, (min.y + max.y) / 2);
@@ -73,7 +61,6 @@ void CompositeShape::move(double dx, double dy) {
 void CompositeShape::scale(double factor) {
     if (isEmpty()) return;
 
-<<<<<<< HEAD
     // Step 1: get composite shape center
     Point compositeCenter = getCenter();
 
@@ -91,52 +78,21 @@ void CompositeShape::scale(double factor) {
         double newDy = dy * factor;
 
         // Step 2.4: calculate new shape center position
-=======
-    //шаг 1: получаем центр составной фигуры
-    Point compositeCenter = getCenter();
-
-    //шаг 2: обрабатываем каждую вложенную фигуру
-    for (auto& shape : shapes_) {
-        //подшаг 2.1: находим текущий центр фигуры
-        Point shapeCenter = shape->getCenter();
-
-        //подшаг 2.2: вычисляем вектор от центра композита до центра фигуры
-        double dx = shapeCenter.x - compositeCenter.x;
-        double dy = shapeCenter.y - compositeCenter.y;
-
-        //подшаг 2.3: масштабируем вектор
-        double newDx = dx * factor;
-        double newDy = dy * factor;
-
-        //подшаг 2.4: вычисляем новое положение центра
->>>>>>> main
         Point newShapeCenter(
             compositeCenter.x + newDx,
             compositeCenter.y + newDy
         );
 
-<<<<<<< HEAD
         // Step 2.5: move shape to new position
-=======
-        //подшаг 2.5: смещаем фигуру в новое положение
->>>>>>> main
         double moveX = newShapeCenter.x - shapeCenter.x;
         double moveY = newShapeCenter.y - shapeCenter.y;
         shape->move(moveX, moveY);
 
-<<<<<<< HEAD
         // Step 2.6: scale the shape itself
-=======
-        //подшаг 2.6: масштабируем саму фигуру
->>>>>>> main
         shape->scale(factor);
     }
 }
 
 std::string CompositeShape::getName() const {
     return "COMPOSITE";
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> main
