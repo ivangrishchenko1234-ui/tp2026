@@ -1,15 +1,15 @@
-#ifndef CIRCLE_H
-#define CIRCLE_H
+#ifndef RING_H
+#define RING_H
 
 #include "shape.h"
 
-class Circle : public Shape {
+class Ring : public Shape {
 private:
     Point center;
-    double radius;
-
+    double outerRadius;
+    double innerRadius;
 public:
-    Circle(const Point& c, double r);
+    Ring(const Point& c, double outer, double inner);
     double getArea() const override;
     Point getCenter() const override;
     void move(double dx, double dy) override;
