@@ -2,6 +2,8 @@
 #include <stdexcept>
 #define _USE_MATH_DEFINES
 
+#include <cmath>
+
 Circle::Circle(const Point &center, double radius)
     : center_(center), radius_(radius) {
     if (radius <= 0.0) {
