@@ -1,8 +1,5 @@
 #include "circle.h"
 #include <stdexcept>
-#define _USE_MATH_DEFINES
-
-#include <cmath>
 
 Circle::Circle(const Point &center, double radius)
     : center_(center), radius_(radius) {
@@ -12,7 +9,8 @@ Circle::Circle(const Point &center, double radius)
 }
 
 double Circle::getArea() const {
-    return M_PI * radius_ * radius_;
+    const double PI = 3.14159265358979323846;
+    return PI * radius_ * radius_;
 }
 
 Point Circle::getCenter() const {
