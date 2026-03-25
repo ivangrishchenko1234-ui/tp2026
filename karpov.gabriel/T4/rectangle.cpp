@@ -1,8 +1,8 @@
 #include "rectangle.h"
 #include <string>
 
-Rectangle::Rectangle(const Point& bottomLeft, const Point& topRight) : 
-        bottomLeft_(bottomLeft), topRight_(topRight) 
+Rectangle::Rectangle(const Point& bottomLeft, const Point& topRight) :
+        bottomLeft_(bottomLeft), topRight_(topRight)
     { }
 
 double Rectangle::getArea() const {
