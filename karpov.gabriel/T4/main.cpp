@@ -23,7 +23,7 @@ int main() {
     std::cin >> factorInput;
     if (std::cin.fail()) {
         if (std::cin.eof()) {
-            return 0;
+            factorInput = 1.0;
         } else {
             std::cerr << "ERROR. Wrong data format\n";
             return 1;
