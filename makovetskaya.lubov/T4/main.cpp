@@ -10,9 +10,7 @@
 
 void printSimpleShapeInfo(const std::shared_ptr<Shape>& shape) {
     Point center = shape->getCenter();
-    std::cout << shape->getName() << ", ("
-        << std::fixed << std::setprecision(2) << center.x << ", "
-        << center.y << "), " << shape->getArea();
+    std::cout << shape->getName() << ", (" << std::fixed << std::setprecision(2) << center.x << ", " << center.y << "), " << shape->getArea();
 }
 
 void printShapeInfo(const std::shared_ptr<Shape>& shape, int indentLevel = 0) {
@@ -21,9 +19,7 @@ void printShapeInfo(const std::shared_ptr<Shape>& shape, int indentLevel = 0) {
     auto composite = std::dynamic_pointer_cast<CompositeShape>(shape);
     if (composite) {
         Point center = composite->getCenter();
-        std::cout << indent << "[COMPOSITE, ("
-            << std::fixed << std::setprecision(2) << center.x << ", "
-            << center.y << "), " << composite->getArea() << ":\n";
+        std::cout << indent << "[COMPOSITE, (" << std::fixed << std::setprecision(2) << center.x << ", " << center.y << "), " << composite->getArea() << ":\n";
 
         const auto& shapes = composite->getShapes();
         for (size_t i = 0; i < shapes.size(); ++i) {
