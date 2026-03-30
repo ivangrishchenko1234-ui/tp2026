@@ -4,14 +4,22 @@
 
 Rectangle::Rectangle(const Point& corner1, const Point& corner2)
 {
-    corner1_ = corner1;
-    corner2_ = corner2;
+    if (corner1.x == corner2.x || corner1.y == corner2.y)
+    {
+        throw std::invalid_argument("Rectangle corners must not coincide on any axis");
+    }
+
+    corner1_.x = std::min(corner1.x, corner2.x);
+    corner1_.y = std::min(corner1.y, corner2.y);
+    corner2_.x = std::max(corner1.x, corner2.x);
+    corner2_.y = std::max(corner1.y, corner2.y);
 }
 
 double Rectangle::getArea() const
 {
-    double side1 = std::fabs(corner1_.x - corner2_.x);
-    double side2 = std::fabs(corner1_.y - corner2_.y);
+    double side1 = corner2_.x - corner1_.x;
+    double side2 = corner2_.y - corner1_.y;
+
 
     return side1 * side2;
 }
