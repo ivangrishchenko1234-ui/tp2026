@@ -33,7 +33,7 @@ int main() {
         std::cin >> factor;
         if (std::cin.fail()) {
             std::cerr << "Error: Invalid scale factor input\n";
-            return 1;
+            return 0;
         }
         if (factor <= 0.0)
         {
