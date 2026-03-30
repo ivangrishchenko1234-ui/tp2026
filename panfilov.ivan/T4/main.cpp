@@ -29,10 +29,11 @@ int main() {
         shapes.push_back(std::move(composite));
         std::cout << "Before scale\n";
         printInfo(shapes);
-        double factor = 0.0;
-        if (!(std::cin >> factor))
-        {
-            throw std::invalid_argument("invalid argument for factor");
+        double factor;
+        std::cin >> factor;
+        if (std::cin.fail()) {
+            std::cerr << "Error: Invalid scale factor input\n";
+            return 0;
         }
         if (factor <= 0.0)
         {
