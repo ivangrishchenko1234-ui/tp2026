@@ -9,6 +9,11 @@ Ring::Ring(const Point& center, double rad1, double rad2)
         throw std::invalid_argument("Invalid ring radius");
     }
 
+    if (rad1 == rad2)
+    {
+        throw std::invalid_argument("Ring radii must be different");
+    }
+
     center_ = center;
 
     if(rad1 > rad2)
