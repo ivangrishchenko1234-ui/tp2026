@@ -52,7 +52,7 @@ std::string Square::getName() const
 
 Bounds Square::getBounds() const
 {
-    return 
+    return
     {
         corner_.x,
         corner_.y,

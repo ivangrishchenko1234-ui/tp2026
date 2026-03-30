@@ -45,13 +45,13 @@ Point CompositeShape::getCenter() const
         {
             minX = b.minX;
         }
-        
+
         if(b.maxX > maxX)
         {
             maxX = b.maxX;
         }
-        
-        if(b.minY < minY) 
+
+        if(b.minY < minY)
         {
             minY = b.minY;
         }

@@ -61,7 +61,7 @@ std::string Ring::getName() const
 
 Bounds Ring::getBounds() const
 {
-    return 
+    return
     {
         center_.x - outerRadius_,
         center_.y - outerRadius_,
