@@ -144,3 +144,28 @@ std::string CompositeShape::getDescription() const
     oss << "]";
     return oss.str();
 }
+
+Bounds CompositeShape::getBounds() const
+{
+    if (shapes_.empty())
+    {
+        throw std::invalid_argument("Composite shape is empty");
+    }
+
+    auto first = shapes_[0]->getBounds();
+    double minX = first.minX;
+    double minY = first.minY;
+    double maxX = first.maxX;
+    double maxY = first.maxY;
+
+    for (size_t i = 1; i < shapes_.size(); ++i)
+    {
+        auto b = shapes_[i]->getBounds();
+        if (b.minX < minX) minX = b.minX;
+        if (b.minY < minY) minY = b.minY;
+        if (b.maxX > maxX) maxX = b.maxX;
+        if (b.maxY > maxY) maxY = b.maxY;
+    }
+
+    return {minX, minY, maxX, maxY};
+}

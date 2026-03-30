@@ -21,6 +21,7 @@ public:
     void move(const Point& newCenter) override;
     void scale(double ratio) override;
     std::string getName() const override;
+    Bounds getBounds() const override;
 };
 
 #endif
