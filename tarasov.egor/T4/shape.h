@@ -10,7 +10,7 @@ public:
     virtual void move(double a, double b) = 0;
     virtual void scale(double c) = 0;
     virtual std::string getName() const = 0;
-    
+
     friend std::ostream& operator<<(std::ostream& os, const Shape& shape) {
     os << "[" << shape.getName() << ", "
        << shape.getCenter() << ", "
