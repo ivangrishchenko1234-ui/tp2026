@@ -36,11 +36,6 @@ namespace nspace
         std::string& ref;
     };
 
-    struct LabelIO
-    {
-        std::string exp;
-    };
-
     class iofmtguard
     {
     public:
@@ -58,7 +53,6 @@ namespace nspace
     std::istream& operator>>(std::istream& in, DoubleLitIO&& dest);
     std::istream& operator>>(std::istream& in, RationalIO&& dest);
     std::istream& operator>>(std::istream& in, StringIO&& dest);
-    std::istream& operator>>(std::istream& in, LabelIO&& dest);
     std::istream& operator>>(std::istream& in, DataStruct& dest);
     std::ostream& operator<<(std::ostream& out, const DataStruct& src);
 }
@@ -139,67 +133,117 @@ std::istream& nspace::operator>>(std::istream& in, StringIO&& dest)
     return std::getline(in >> DelimiterIO{ '"' }, dest.ref, '"');
 }
 
-std::istream& nspace::operator>>(std::istream& in, LabelIO&& dest)
-{
-    std::istream::sentry sentry(in);
-    if (!sentry) return in;
-    std::string data;
-    if ((in >> StringIO{ data }) && (data != dest.exp))
-    {
-        in.setstate(std::ios::failbit);
-    }
-    return in;
-}
-
 std::istream& nspace::operator>>(std::istream& in, DataStruct& dest)
 {
     std::istream::sentry sentry(in);
     if (!sentry) return in;
+
+    std::string line;
+    if (!std::getline(in, line))
+    {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+
+    std::istringstream iss(line);
 
     DataStruct input;
     bool key1Set = false;
     bool key2Set = false;
     bool key3Set = false;
 
-    in >> DelimiterIO{ '(' };
+    char openBracket;
+    iss >> openBracket;
+    if (openBracket != '(')
+    {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
 
-    while (in)
+    while (iss)
     {
         char c;
-        in >> c;
+        iss >> c;
         if (c == ')')
         {
             break;
         }
-        in.putback(c);
+        iss.putback(c);
 
         std::string fieldName;
-        in >> LabelIO{ fieldName };
-        in >> DelimiterIO{ ' ' };
+        iss >> fieldName;
+        if (!iss) break;
+
+        char colon;
+        iss >> colon;
+        if (colon != ':') break;
 
         if (fieldName == "key1")
         {
-            in >> DoubleLitIO{ input.key1 };
-            key1Set = true;
+            double value;
+            char suffix;
+            iss >> value >> suffix;
+            if (iss && (suffix == 'd' || suffix == 'D'))
+            {
+                input.key1 = value;
+                key1Set = true;
+            }
+            else
+            {
+                break;
+            }
         }
         else if (fieldName == "key2")
         {
-            in >> RationalIO{ input.key2 };
+            char openParen;
+            iss >> openParen;
+            if (openParen != '(') break;
+
+            char colon1, n, colon2, d, colon3;
+            long long numerator;
+            unsigned long long denominator;
+
+            iss >> colon1 >> n >> colon2;
+            if (colon1 != ':' || n != 'N' || colon2 != ':') break;
+
+            iss >> numerator;
+            iss >> colon3;
+            if (colon3 != ':') break;
+
+            iss >> d >> colon2;
+            if (d != 'D' || colon2 != ':') break;
+
+            iss >> denominator;
+            iss >> colon3;
+            if (colon3 != ':') break;
+
+            char closeParen;
+            iss >> closeParen;
+            if (closeParen != ')') break;
+
+            if (denominator == 0) break;
+
+            input.key2 = std::make_pair(numerator, denominator);
             key2Set = true;
         }
         else if (fieldName == "key3")
         {
-            in >> StringIO{ input.key3 };
+            char quote;
+            iss >> quote;
+            if (quote != '"') break;
+
+            std::string value;
+            std::getline(iss, value, '"');
+            input.key3 = value;
             key3Set = true;
         }
         else
         {
-            in.setstate(std::ios::failbit);
             break;
         }
     }
 
-    if (in && key1Set && key2Set && key3Set)
+    if (key1Set && key2Set && key3Set)
     {
         dest = std::move(input);
     }
