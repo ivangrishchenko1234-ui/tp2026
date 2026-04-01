@@ -159,6 +159,10 @@ int main() {
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
     }
+    if (data.empty()) {
+        std::cout << "Looks like there is no supported record. Cannot determine input. Test skipped" << std::endl;
+        return 0;
+    }
     std::sort(data.begin(), data.end(), nspace::compareData);
     std::copy(
         data.begin(),
