@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <stdexcept> 
+#include <stdexcept>
 #include "Rectangle.h"
 #include "Ellipse.h"
 #include "Square.h"
@@ -41,11 +41,8 @@ int main() {
         std::cout << "\n--- AFTER SCALE (x" << factor << ") --- \n";
         printShapes(myShapes);
     } 
-    catch (const std::invalid_argument& e) {
-        std::cerr << e.what() << "\n";
-    }
     catch (...) {
-        std::cerr << "ERROR";
+        std::cerr << "ERROR" << "\n";
     }
     return 0;
 }
