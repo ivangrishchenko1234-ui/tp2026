@@ -148,15 +148,19 @@ namespace nspace {
 
 int main() {
     std::vector<nspace::DataStruct> data;
-    while (!std::cin.eof()) {
-        std::copy(
+    while (std::cin) {
+        if (!(std::copy(
             std::istream_iterator<nspace::DataStruct>(std::cin),
             std::istream_iterator<nspace::DataStruct>(),
-            std::back_inserter(data)
-        );
-        if (std::cin.fail() && !std::cin.eof()) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::back_inserter(data))))
+        {
+            if (std::cin.fail() && !std::cin.eof()) {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            }
+            else {
+                break;
+            }
         }
     }
     if (data.empty()) {
