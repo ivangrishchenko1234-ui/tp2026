@@ -36,7 +36,8 @@ namespace nspace {
             temp >>= 1;
         }
         std::reverse(s.begin(), s.end());
-        out << s;
+        if(s.back()=='1') out<<'0'<<s;
+        else out << s;
     }
 
     std::istream& operator>>(std::istream& in, DelimiterIO&& dest) {
@@ -64,7 +65,11 @@ namespace nspace {
         std::istream::sentry sentry(in);
         if (!sentry) return in;
         in >> std::ws;
-        in>>dest.ref;
+        std::string temp;
+        std::getline(in,temp,':');
+        in.putback(':');
+        if(temp.find('e') == std::string::npos && temp.find('E') == std::string::npos) in.setstate(std::ios::failbit);
+        else dest.ref=std::stod(temp);
         return in;
     }
 
@@ -72,9 +77,12 @@ namespace nspace {
         std::istream::sentry sentry(in);
         if (!sentry) return in;
         in >> std::ws;
+        std::string temp;
         char c1, c2;
         if (in >> c1 >> c2 && (c1 == '0' && std::tolower(c2) == 'b')) {
-            in >> dest.ref;
+            std::getline(in,temp,':');
+            in.putback(':');
+            dest.ref=std::stoull(temp,nullptr,2);
         } else in.setstate(std::ios::failbit);
         return in;
     }
@@ -117,13 +125,8 @@ namespace nspace {
         if (e_pos != std::string::npos && res.size() > e_pos + 2) {
             if (res[e_pos + 2] == '0' && std::isdigit(res.back())) res.erase(e_pos + 2, 1);
         }
-        out << "(:key1 " << res;
-        if(src.key2%10!=0){
-           out << ":key2 0b0"<<src.key2;
-        }
-        else{
-            out << ":key2 0b"<<src.key2;
-        }
+        out << "(:key1 " << res<<":key2 ";
+        printBinary(out,src.key2);
         out << ":key3 \"" << src.key3 << "\":)";
         return out;
     }
