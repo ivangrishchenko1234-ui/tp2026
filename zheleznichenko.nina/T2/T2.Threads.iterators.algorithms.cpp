@@ -9,6 +9,7 @@
 
 struct DataStruct {
   unsigned long long key1;
+  size_t key1_width;
   std::complex<double> key2;
   std::string key3;
 };
@@ -55,7 +56,7 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
   std::istream::sentry sentry(in);
   if (!sentry) return in;
 
-  DataStruct input;
+  DataStruct input{ 0, 0, {0.0, 0.0}, "" };
   if (!(in >> DelimiterIO{ '(' })) return in;
 
   for (int i = 0; i < 3; ++i) {
@@ -68,8 +69,13 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
       while (in.peek() == '0' || in.peek() == '1') {
         char c; in >> c; bin += c;
       }
-      if (!bin.empty()) input.key1 = std::stoull(bin, nullptr, 2);
-      else in.setstate(std::ios::failbit);
+      if (!bin.empty()) {
+        input.key1 = std::stoull(bin, nullptr, 2);
+        input.key1_width = bin.length();
+      }
+      else {
+        in.setstate(std::ios::failbit);
+      }
     }
     else if (key == "key2") {
       double re, im;
@@ -92,19 +98,22 @@ std::ostream& operator<<(std::ostream& out, const DataStruct& src) {
   if (!sentry) return out;
 
   out << "(:key1 0b";
-  if (src.key1 == 0) {
-    out << "0";
+  std::string b;
+  unsigned long long n = src.key1;
+  if (n == 0) {
+    b = "0";
   }
   else {
-    std::string b;
-    unsigned long long n = src.key1;
     while (n > 0) {
       b += (n % 2 ? '1' : '0');
       n /= 2;
     }
-    std::reverse(b.begin(), b.end());
-    out << b;
   }
+  while (b.length() < src.key1_width) {
+    b += '0';
+  }
+  std::reverse(b.begin(), b.end());
+  out << b;
 
   out << ":key2 #c(" << std::fixed << std::setprecision(1)
     << src.key2.real() << " " << src.key2.imag() << "):key3 \""
