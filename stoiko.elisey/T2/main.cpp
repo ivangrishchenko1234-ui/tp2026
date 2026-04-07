@@ -3,16 +3,19 @@
 
 #include <algorithm>
 #include <cctype>
+#include <ios>
 #include <istream>
 #include <iterator>
 #include <sstream>
+#include <iomanip>
 #include <string>
 #include <complex>
 #include <iostream>
 #include <vector>
 
-// (:key1 #c(1.0 -1.0):key2 (:keyX 076:):key3 "data":)
-// (:key2 (:keyX 01001:):key3 "with : inside":key1 #c(2.0 -3.0):)
+// (:key2 #c(1.0 -1.0):key1 076:key3 "data":)
+// (:key1 01001:key3 "with : inside":key2 #c(2.0 -3.0):)
+// (:key1 01001:key2 #c(2.0 -3.0):key3 "normal":)
 struct DataStruct {
     unsigned long long key1;
     std::complex<double> key2;
@@ -36,7 +39,7 @@ struct StringIO {
 };
 
 struct LabelIO {
-    std::string exp;
+    std::string& ref;
 };
 
 std::istream& operator>>(std::istream& in, DelimiterIO&& dest);
@@ -70,25 +73,25 @@ std::istream& operator>>(std::istream& in, OctLiteralIO&& dest) {
         return in;
     }
 
-    unsigned long long num;
-
-    in >> DelimiterIO{'0'} >> num;
-    if (!in) {
+    if (in.peek() != '0') {
+        in.setstate(std::ios::failbit);
         return in;
     }
+    in.get();
 
-    std::istringstream str_view(std::to_string(num));
+    unsigned long long num = 0;
 
-    char digit;
-    while (str_view >> digit) {
-        if (((digit - '0') < 0) || ((digit - '0') > 9)) {
-            in.setstate(std::ios::failbit);
-            return in;
+    while (true) {
+        int digit = in.peek();
+        if (digit >= '0' && digit <= '7') {
+            in.get();
+            num = num * 8 + (digit - '0');
+        } else {
+            break;
         }
     }
 
     dest.ref = num;
-
     return in;
 }
 
@@ -135,8 +138,14 @@ std::istream& operator>>(std::istream& in, LabelIO&& dest) {
         return in;
     }
 
-    std::string data = "";
-    if ((in >> StringIO{data}) && (data != dest.exp)) {
+    dest.ref.clear();
+
+    char c = '0';
+    while (in.get(c) && !std::isspace(c)) {
+        dest.ref.push_back(c);
+    }
+
+    if (!in || dest.ref.empty()) {
         in.setstate(std::ios::failbit);
     }
     return in;
@@ -203,7 +212,9 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
 
     check_keys_status keys;
     while (in && in.peek() != ')') {
-        in >> DelimiterIO{':'};
+        if (in.peek() == ':') {
+            in.get();
+        }
 
         std::string field_type;
         in >> LabelIO{field_type};
@@ -212,9 +223,8 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
             return in;
         }
 
-        in >> DelimiterIO{' '};
-        if (!in) {
-            return in;
+        if (in.peek() == ' ') {
+            in.get();
         }
 
         if (field_type == "key1" && !keys.is_set1()) {
@@ -231,12 +241,14 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
             return in;
         }
 
-        // if (!in) {
-        //     return in;
-        // }
-
-        in >> DelimiterIO{':'};
         if (!in) {
+            return in;
+        }
+
+        if (in.peek() == ':') {
+            in.get();
+        } else if (in.peek() != ')') {
+            in.setstate(std::ios::failbit);
             return in;
         }
     }
@@ -258,7 +270,8 @@ std::ostream& operator<<(std::ostream& out, const DataStruct& src) {
         return out;
     }
 
-    out << "(:key1 0" << src.key1
+    out << std::fixed << std::setprecision(1)
+        << "(:key1 " << std::oct << std::showbase << src.key1 << std::dec
         << ":key2 #c(" << src.key2.real() << " " << src.key2.imag() << ")"
         << ":key3 \"" << src.key3 << "\":)";
 
@@ -287,6 +300,7 @@ int main() {
         }
 
         std::istringstream iss(raw);
+
         std::copy(
             std::istream_iterator<DataStruct>(iss),
             std::istream_iterator<DataStruct>(),
@@ -299,6 +313,8 @@ int main() {
         objects.end(),
         compare_keys
     );
+
+    std::cout << "\n --- | --- | --- \n";
 
     std::copy(
         objects.begin(),
