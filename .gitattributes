@@ -1,0 +1,31 @@
+# Автоматически определять текстовые файлы и нормализовать их окончания строк
+* text=auto
+
+# Для всех файлов C++ явно указываем, что они текстовые,
+# и принудительно устанавливаем окончания строк LF в репозитории
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.c text eol=lf
+
+# Файлы, которые должны оставаться с CRLF на Windows (если нужно)
+*.sln text eol=crlf
+*.vcxproj text eol=crlf
+
+# Бинарные файлы - не трогать!
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.exe binary
+*.dll binary
+*.o binary
+*.obj binary
+*.class binary
+
+# Системные файлы, которые не должны обрабатываться как текст
+.DS_Store binary
+.gitattributes binary
+.gitignore binary
