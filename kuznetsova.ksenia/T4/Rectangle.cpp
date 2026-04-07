@@ -1,42 +1,47 @@
 #include "Rectangle.h"
+#include "Point.h"
 #include <stdexcept>
+#include <string>
 #include <memory>
 #include <algorithm>
 
-Rectangle::Rectangle(const Point& p1, const Point& p2)
-: bottomLeft_(std::min(p1.x, p2.x), std::min(p1.y, p2.y)),
-topRight_(std::max(p1.x, p2.x), std::max(p1.y, p2.y)) {
+Rectangle::Rectangle(const Point& bottomLeft, const Point& topRight)
+: bottomLeft(bottomLeft), topRight(topRight) {
+
+double width = topRight.x - bottomLeft.x;
+double height = topRight.y - bottomLeft.y;
+
+if (width <= 0 || height <= 0) {
+throw std::invalid_argument("Error: Rectangle width and height must be positive.");
+}
 }
 
 double Rectangle::getArea() const {
-return (topRight_.x - bottomLeft_.x) * (topRight_.y - bottomLeft_.y);
+return (topRight.x - bottomLeft.x) * (topRight.y - bottomLeft.y);
 }
 
 Point Rectangle::getCenter() const {
-return Point(
-(bottomLeft_.x + topRight_.x) / 2,
-(bottomLeft_.y + topRight_.y) / 2
-);
+return Point((bottomLeft.x + topRight.x) / 2.0,
+(bottomLeft.y + topRight.y) / 2.0);
 }
 
 void Rectangle::move(double dx, double dy) {
-bottomLeft_.x += dx;
-bottomLeft_.y += dy;
-topRight_.x += dx;
-topRight_.y += dy;
+bottomLeft.x += dx;
+bottomLeft.y += dy;
+topRight.x += dx;
+topRight.y += dy;
 }
 
 void Rectangle::scale(double factor) {
 if (factor <= 0) {
-throw std::invalid_argument("Scale factor must be positive.");
+throw std::invalid_argument("Error: Scale factor must be positive.");
 }
 
 Point center = getCenter();
-double halfW = (topRight_.x - bottomLeft_.x) / 2 * factor;
-double halfH = (topRight_.y - bottomLeft_.y) / 2 * factor;
-
-bottomLeft_ = Point(center.x - halfW, center.y - halfH);
-topRight_ = Point(center.x + halfW, center.y + halfH);
+bottomLeft.x = center.x + (bottomLeft.x - center.x) * factor;
+bottomLeft.y = center.y + (bottomLeft.y - center.y) * factor;
+topRight.x = center.x + (topRight.x - center.x) * factor;
+topRight.y = center.y + (topRight.y - center.y) * factor;
 }
 
 std::string Rectangle::getName() const {

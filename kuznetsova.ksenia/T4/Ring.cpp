@@ -1,57 +1,48 @@
 #include "Ring.h"
-#include <cmath>
 #include <stdexcept>
-#include <string>
+#include <cmath>
 #include <memory>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-Ring::Ring(const Point& center, double outRad, double inRad)
-: center_(center), outR_(outRad), inR_(inRad) {
-if (outR_ <= 0 || inR_ < 0) {
-throw std::invalid_argument("Invalid radii values.");
+Ring::Ring(const Point& center, double outerRadius, double innerRadius)
+    : center(center), outerRadius(outerRadius), innerRadius(innerRadius)
+{
+    if (outerRadius <= 0 || innerRadius < 0 || innerRadius >= outerRadius) {
+        throw std::invalid_argument("Error: Invalid ring radii.");
+    }
 }
 
-if (outR_ <= inR_) {
-throw std::invalid_argument("Outer radius must be greater than inner radius.");
-}
-}
-
-double Ring::getArea() const {
-return M_PI * (outR_ * outR_ - inR_ * inR_);
+double Ring::getArea() const
+{
+    return M_PI * (outerRadius * outerRadius - innerRadius * innerRadius);
 }
 
-Point Ring::getCenter() const {
-return center_;
+Point Ring::getCenter() const
+{
+    return center;
 }
 
-void Ring::move(double dx, double dy) {
-center_.x += dx;
-center_.y += dy;
+void Ring::move(double dx, double dy)
+{
+    center.x += dx;
+    center.y += dy;
 }
 
-void Ring::scale(double factor) {
-if (factor <= 0) {
-throw std::invalid_argument("Scale factor must be positive.");
+void Ring::scale(double factor)
+{
+    if (factor <= 0) {
+        throw std::invalid_argument("Error: Scale factor must be positive.");
+    }
+
+    outerRadius *= factor;
+    innerRadius *= factor;
 }
 
-double newOutR = outR_ * factor;
-double newInR = inR_ * factor;
-
-if (newOutR <= newInR) {
-throw std::invalid_argument("Scaling violates radii ratio.");
+std::string Ring::getName() const
+{
+    return "RING";
 }
 
-outR_ = newOutR;
-inR_ = newInR;
-}
-
-std::string Ring::getName() const {
-return "RING";
-}
-
-std::unique_ptr<Shape> Ring::clone() const {
-return std::make_unique<Ring>(*this);
+std::unique_ptr<Shape> Ring::clone() const
+{
+    return std::make_unique<Ring>(*this);
 }

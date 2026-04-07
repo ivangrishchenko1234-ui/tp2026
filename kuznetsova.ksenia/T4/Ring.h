@@ -17,8 +17,8 @@ std::string getName() const override;
 std::unique_ptr<Shape> clone() const override;
 
 private:
-Point center_;
-double outR_, inR_;
+Point center;
+double outerRadius, innerRadius;
 };
 
 #endif
