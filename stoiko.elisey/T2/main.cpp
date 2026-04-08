@@ -12,6 +12,7 @@
 #include <complex>
 #include <iostream>
 #include <vector>
+#include <limits>
 
 // (:key2 #c(1.0 -1.0):key1 076:key3 "data":)
 // (:key1 01001:key3 "with : inside":key2 #c(2.0 -3.0):)
