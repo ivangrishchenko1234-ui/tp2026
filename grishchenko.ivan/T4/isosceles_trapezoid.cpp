@@ -1,5 +1,6 @@
 #include "isosceles_trapezoid.h"
 #include <stdexcept>
+
 IsoscelesTrapezoid::IsoscelesTrapezoid(const Point& leftBottom, double bottomBase,
     double topBase, double height)
     : leftBottom_(leftBottom), bottomBase_(bottomBase),
@@ -11,9 +12,11 @@ IsoscelesTrapezoid::IsoscelesTrapezoid(const Point& leftBottom, double bottomBas
         throw std::invalid_argument("Top base must be less than or equal to bottom base");
     }
 }
+
 double IsoscelesTrapezoid::getArea() const {
     return (bottomBase_ + topBase_) * height_ / 2.0;
 }
+
 Point IsoscelesTrapezoid::getCenter() const {
     Point center;
     double offset = (bottomBase_ - topBase_) / 2.0;
@@ -21,10 +24,12 @@ Point IsoscelesTrapezoid::getCenter() const {
     center.y = leftBottom_.y + height_ / 2.0;
     return center;
 }
+
 void IsoscelesTrapezoid::move(double dx, double dy) {
     leftBottom_.x += dx;
     leftBottom_.y += dy;
 }
+
 void IsoscelesTrapezoid::scale(double factor) {
     Point center = getCenter();
     leftBottom_.x = center.x + (leftBottom_.x - center.x) * factor;
@@ -33,6 +38,7 @@ void IsoscelesTrapezoid::scale(double factor) {
     topBase_ *= factor;
     height_ *= factor;
 }
+
 std::string IsoscelesTrapezoid::getName() const {
     return "ISOSCELES_TRAPEZOID";
 }
