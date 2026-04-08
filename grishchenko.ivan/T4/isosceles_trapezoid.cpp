@@ -1,7 +1,7 @@
 #include "isosceles_trapezoid.h"
 #include <stdexcept>
 IsoscelesTrapezoid::IsoscelesTrapezoid(const Point& leftBottom, double bottomBase,
-    double topBase, double height)
+double topBase, double height)
     : leftBottom_(leftBottom), bottomBase_(bottomBase),
     topBase_(topBase), height_(height) {
     if (bottomBase <= 0 || topBase <= 0 || height <= 0) {
