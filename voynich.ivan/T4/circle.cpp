@@ -4,7 +4,8 @@ Circle::Circle(const Point& center, double r)
 : centerP(center), radius(r){};
 
 double Circle::getArea()const{
-    double area = 3.14 * radius * radius;
+    const double pi = 3.1415926535;
+    double area = pi * radius * radius;
     return area;
 }
 
