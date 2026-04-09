@@ -5,7 +5,7 @@ IsoscelesTrapezoid::IsoscelesTrapezoid(const Point& leftBottom, double bottomBas
     :leftBottom_(leftBottom), bottomBase_(bottomBase),
     topBase_(topBase), height_(height) {
     if (bottomBase <= 0 || topBase <= 0 || height <= 0) {
-        throw std::invalid_argument("Basesandheightmustbepositive");
+        throw std::invalid_argument("Bases and heightmustbepositive");
     }
     if (topBase > bottomBase) {
         throw std::invalid_argument("Topbasemustbelessthanorequaltobottombase");
