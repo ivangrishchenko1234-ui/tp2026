@@ -120,11 +120,17 @@ std::istream& operator>>(std::istream& in, OctalDataIO&& dest) {
     while (in.get(c) && c >= '0' && c <= '7') {
         value = value * 8 + (c - '0');
     }
+
     if (!in && !in.eof()) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    in.unget();
+
+    if (in) {
+        in.unget();
+    } else if (in.eof()) {
+        in.clear();
+    }
 
     if (in) {
         dest.ref = value;
@@ -170,6 +176,9 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
 
         if (in.peek() == ' ') {
             in.get();
+        } else {
+            in.setstate(std::ios::failbit);
+            return in;
         }
 
         if (label == "key1" && !has_k1) {
