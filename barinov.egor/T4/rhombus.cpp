@@ -35,10 +35,8 @@ std::string Rhombus::getName() const {
 
 BoundingBox Rhombus::getBoundingBox() const {
     BoundingBox box;
-    box.bottomLeft = Point(center.x - horizontalDiagonal / 2, 
-                           center.y - verticalDiagonal / 2);
-    box.topRight = Point(center.x + horizontalDiagonal / 2, 
-                         center.y + verticalDiagonal / 2);
+    box.bottomLeft = Point(center.x - horizontalDiagonal / 2, center.y - verticalDiagonal / 2);
+    box.topRight = Point(center.x + horizontalDiagonal / 2, center.y + verticalDiagonal / 2);
     return box;
 }
 
@@ -57,4 +55,3 @@ Point Rhombus::getLeft() const {
 Point Rhombus::getRight() const {
     return Point(center.x + horizontalDiagonal / 2.0, center.y);
 }
-

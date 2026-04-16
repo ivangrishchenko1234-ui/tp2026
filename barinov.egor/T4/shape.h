@@ -7,12 +7,11 @@
 struct BoundingBox {
     Point bottomLeft;
     Point topRight;
-    
+
     double getWidth() const { return topRight.x - bottomLeft.x; }
     double getHeight() const { return topRight.y - bottomLeft.y; }
     Point getCenter() const {
-        return Point((bottomLeft.x + topRight.x) / 2,
-                     (bottomLeft.y + topRight.y) / 2);
+        return Point((bottomLeft.x + topRight.x) / 2, (bottomLeft.y + topRight.y) / 2);
     }
 };
 
