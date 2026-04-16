@@ -10,16 +10,13 @@
 void printShapeInfo(const Shape& shape) {
     Point center = shape.getCenter();
     std::cout << std::fixed << std::setprecision(2);
-    std::cout << "[" << shape.getName() 
-              << ", (" << center.x << ", " << center.y << "), " 
-              << shape.getArea() << "]";
+    std::cout << "[" << shape.getName() << ", (" << center.x << ", " << center.y << "), " << shape.getArea() << "]";
 }
 
 void printCompositeInfo(const CompositeShape& composite) {
     Point center = composite.getCenter();
     std::cout << std::fixed << std::setprecision(2);
-    std::cout << "[COMPOSITE, (" << center.x << ", " << center.y << "), " 
-              << composite.getArea() << ":\n";
+    std::cout << "[COMPOSITE, (" << center.x << ", " << center.y << "), " << composite.getArea() << ":\n";
 
     for (const auto& shape : composite.getShapes()) {
         std::cout << "  ";
