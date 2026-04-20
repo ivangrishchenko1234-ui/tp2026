@@ -65,7 +65,7 @@ std::istream& operator>>(std::istream& in, UllHexIO&& dest) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    
+
     if (hexStr.size() > 16) {
         in.setstate(std::ios::failbit);
         return in;
@@ -75,6 +75,7 @@ std::istream& operator>>(std::istream& in, UllHexIO&& dest) {
         unsigned long long value = std::stoull(hexStr, nullptr, 16);
         dest.ref = value;
     }
+
     catch (const std::out_of_range&) {
         in.setstate(std::ios::failbit);
     }
