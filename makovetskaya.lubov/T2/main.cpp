@@ -43,7 +43,6 @@ int main()
 
     if (data.empty())
     {
-        std::cerr << "No valid data read!" << std::endl;
         return 0;
     }
 
