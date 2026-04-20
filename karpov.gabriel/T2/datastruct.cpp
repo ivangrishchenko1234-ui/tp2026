@@ -1,164 +1,252 @@
 #include "datastruct.h"
-#include <limits>
-#include <iomanip>
-#include <sstream>
 #include <cctype>
-#include <cstdlib>
-#include <utility>
-#include <string>
+#include <cmath>
+#include <sstream>
 
 std::istream& operator>>(std::istream& in, DelimiterIO&& dest) {
     std::istream::sentry sentry(in);
-    if (!sentry)
+    if (!sentry) {
         return in;
-    char c = 0;
-    in.get(c);
-    if (in && c != dest.exp)
-        in.setstate(std::ios::failbit);
-    return in;
-}
-
-std::istream& operator>>(std::istream& in, StringIO&& dest) {
-    std::istream::sentry sentry(in);
-    if (!sentry)
-        return in;
-    return std::getline(in >> DelimiterIO{'"'}, dest.ref, '"');
-}
-
-std::istream& operator>>(std::istream& in, LabelIO&& dest) {
-    std::istream::sentry sentry(in);
-    if (!sentry)
-        return in;
-    dest.ref.clear();
-    char c;
-    while (in.get(c) && !std::isspace(static_cast<unsigned char>(c)) && c != ':') {
-        dest.ref.push_back(c);
     }
-    if (c == ':') {
-        in.unget();
-    }
-    if (dest.ref.empty()) {
+
+    char c = '0';
+    in >> c;
+    if (in && (c != dest.exp)) {
         in.setstate(std::ios::failbit);
     }
-    return in;
-}
 
-std::istream& operator>>(std::istream& in, DoubleSciIO&& dest) {
-    std::istream::sentry sentry(in);
-    if (!sentry)
-        return in;
-    in >> dest.ref;
-    if (!in) {
-        return in;
-    }
-    int next = in.peek();
-    if (next != ':' && !std::isspace(next) && next != std::char_traits<char>::eof()) {
-        in.setstate(std::ios::failbit);
-    }
     return in;
 }
 
 std::istream& operator>>(std::istream& in, LongLongIO&& dest) {
     std::istream::sentry sentry(in);
-    if (!sentry)
+    if (!sentry) {
         return in;
-    std::string token;
-    char c;
-    while (in.get(c) && !std::isspace(static_cast<unsigned char>(c)) && c != ':') {
-        token.push_back(c);
     }
-    if (c == ':') {
-        in.unget();
+    in >> std::ws;
+
+    std::string numberWithSuff;
+    char currentChar;
+
+    while (in.get(currentChar) && currentChar != ':') {
+        numberWithSuff += currentChar;
     }
-    if (token.size() < 2 || (token.substr(token.size() - 2) != "LL" &&
-                              token.substr(token.size() - 2) != "ll")) {
+
+    in.putback(':');
+
+    if (numberWithSuff.length() < 2) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    token.resize(token.size() - 2);
-    try {
-        std::size_t pos = 0;
-        dest.ref = std::stoll(token, &pos);
-        if (pos != token.size()) {
+
+    if (numberWithSuff.length() == 3 && (numberWithSuff[0] == '-' || numberWithSuff[0] == '+')) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+
+    size_t length = numberWithSuff.length();
+    char firstSuffChar = std::tolower(numberWithSuff[length - 2]);
+    char secondSuffChar = std::tolower(numberWithSuff[length - 1]);
+
+    if (firstSuffChar == 'l' && secondSuffChar == 'l') {
+        numberWithSuff.pop_back();
+        numberWithSuff.pop_back();
+
+        if (numberWithSuff.empty() || numberWithSuff == "-" || numberWithSuff == "+") {
             in.setstate(std::ios::failbit);
+            return in;
         }
-    } catch (...) {
-        in.setstate(std::ios::failbit);
+
+        std::stringstream converter(numberWithSuff);
+        long long result = 0;
+
+        if (converter >> result) {
+            dest.ref = result;
+            return in;
+        }
     }
+    in.setstate(std::ios::failbit);
     return in;
+}
+
+std::istream& operator>>(std::istream& in, DoubleIO&& dest) {
+    std::istream::sentry sentry(in);
+    if (!sentry) {
+        return in;
+    }
+
+    std::string mantissaBuffer;
+    char expSign = '+';
+    int expValue = 0;
+    char ch;
+
+    bool dotFound = false;
+    bool hasDigitsBeforeDot = false;
+    bool hasDigitsAfterDot = false;
+
+    in >> std::ws;
+    if (in.peek() == '-') {
+        in.get(ch);
+        mantissaBuffer += '-';
+    } else if (in.peek() == '+') {
+        in.get(ch);
+    }
+
+    while (in.get(ch)) {
+        if (std::isdigit(static_cast<unsigned char>(ch))) {
+            mantissaBuffer += ch;
+            if (dotFound) {
+                hasDigitsAfterDot = true;
+            } else {
+                hasDigitsBeforeDot = true;
+            }
+        } else if (ch == '.' && !dotFound) {
+            if (!hasDigitsBeforeDot) {
+                in.setstate(std::ios::failbit);
+                return in;
+            }
+            mantissaBuffer += ch;
+            dotFound = true;
+        } else if (ch == 'e' || ch == 'E') {
+            break;
+        } else {
+            in.putback(ch);
+            in.setstate(std::ios::failbit);
+            return in;
+        }
+    }
+
+    if (!hasDigitsBeforeDot || !dotFound || !hasDigitsAfterDot) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+    if (!in.get(expSign) || (expSign != '+' && expSign != '-')) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+
+    in >> expValue;
+    if (!in) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+
+    double mantissa = std::stod(mantissaBuffer);
+    int finalExp = (expSign == '-') ? -expValue : expValue;
+    dest.ref = mantissa * std::pow(10.0, finalExp);
+
+    return in;
+}
+
+std::istream& operator>>(std::istream& in, StringIO&& dest) {
+    std::istream::sentry sentry(in);
+    if (!sentry) {
+        return in;
+    }
+
+    return std::getline(in >> DelimiterIO{'"'}, dest.ref, '"');
 }
 
 std::istream& operator>>(std::istream& in, DataStruct& dest) {
     std::istream::sentry sentry(in);
-    if (!sentry)
+    if (!sentry) {
         return in;
-    while (std::isspace(in.peek())) in.get();
-    if (in.peek() != '(') {
+    }
+
+    DataStruct temp;
+    bool key1_visible = false, key2_visible = false, key3_visible = false;
+
+    if (!(in >> DelimiterIO{'('} >> DelimiterIO{':'})) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    in >> DelimiterIO{'('} >> DelimiterIO{':'};
-    if (!in)
-        return in;
-    DataStruct temp;
-    bool hasKey1 = false, hasKey2 = false, hasKey3 = false;
-    while (in && in.peek() != ')') {
-        std::string fieldName;
-        in >> LabelIO{fieldName};
-        if (!in)
-            return in;
-        if (std::isspace(in.peek())) in.get();
-        if (fieldName == "key1" && !hasKey1) {
-            in >> DoubleSciIO{temp.key1};
-            hasKey1 = true;
-        } else if (fieldName == "key2" && !hasKey2) {
-            in >> LongLongIO{temp.key2};
-            hasKey2 = true;
-        } else if (fieldName == "key3" && !hasKey3) {
-            in >> StringIO{temp.key3};
-            hasKey3 = true;
+
+    for (size_t i = 0; i < 3; ++i) {
+        std::string label;
+        if (!(in >> label)) break;
+
+        if (label == "key1") {
+            if (!(in >> DoubleIO{temp.key1})) break;
+            key1_visible = true;
+        } else if (label == "key2") {
+            if (!(in >> LongLongIO{temp.key2})) break;
+            key2_visible = true;
+        } else if (label == "key3") {
+            if (!(in >> StringIO{temp.key3})) break;
+            key3_visible = true;
         } else {
             in.setstate(std::ios::failbit);
-            return in;
+            break;
         }
-        if (!in)
-            return in;
-        in >> DelimiterIO{':'};
-        if (!in)
-            return in;
+
+        if (i < 2 && !(in >> DelimiterIO{':'})) {
+            in.setstate(std::ios::failbit);
+            break;
+        }
     }
-    in >> DelimiterIO{')'};
-    if (in && hasKey1 && hasKey2 && hasKey3) {
-        dest = std::move(temp);
-    } else {
+
+    if (!(in >> DelimiterIO{':'} >> DelimiterIO{')'}) || !key1_visible || !key2_visible || !key3_visible) {
         in.setstate(std::ios::failbit);
+        return in;
     }
+
+    dest = std::move(temp);
     return in;
 }
 
-iofmtguard::iofmtguard(std::basic_ios<char>& s)
-    : s_(s),
-      width_(s.width()),
-      fill_(s.fill()),
-      precision_(s.precision()),
-      fmt_(s.flags()) {
+std::ostream& operator<<(std::ostream& out, const DataStruct& data) {
+    std::ostream::sentry sentry(out);
+    if (!sentry) {
+        return out;
+    }
+    iofmtguard fmtguard(out);
+
+    double mantissa = data.key1;
+    int exponent = 0;
+
+    if (data.key1 == 0.0) {
+        mantissa = 0.0;
+        exponent = 0;
+    } else {
+        double absVal = std::abs(mantissa);
+
+        while (absVal < 1.0 && absVal != 0.0) {
+            absVal *= 10.0;
+            exponent--;
+        }
+        while (absVal >= 10.0) {
+            absVal /= 10.0;
+            exponent++;
+        }
+
+        mantissa = (mantissa < 0) ? -absVal : absVal;
+    }
+
+    out << "(:";
+    out << "key1 ";
+    out << std::fixed << std::setprecision(1) << mantissa;
+    if (exponent >= 0) {
+        out << "e+" << exponent;
+    } else {
+        out << "e" << exponent;
+    }
+    out << ":key2 " << data.key2 << "ll";
+    out << ":key3 \"" << data.key3 << "\"";
+    out << ":)";
+    return out;
 }
+
+iofmtguard::iofmtguard(std::basic_ios<char>& s) :
+    s_(s),
+    width_(s.width()),
+    fill_(s.fill()),
+    precision_(s.precision()),
+    fmt_(s.flags())
+{}
 
 iofmtguard::~iofmtguard() {
     s_.width(width_);
     s_.fill(fill_);
     s_.precision(precision_);
     s_.flags(fmt_);
-}
-
-std::ostream& operator<<(std::ostream& out, const DataStruct& src) {
-    std::ostream::sentry sentry(out);
-    if (!sentry)
-        return out;
-    iofmtguard guard(out);
-    out << "(:key1 ";
-    out << std::scientific << std::setprecision(1) << src.key1;
-    out << ":key2 " << src.key2 << "LL";
-    out << ":key3 \"" << src.key3 << "\":)";
-    return out;
 }

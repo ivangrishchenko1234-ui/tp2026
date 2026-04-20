@@ -1,8 +1,12 @@
 #ifndef DATASTRUCT_H
 #define DATASTRUCT_H
 
-#include <string>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <cassert>
+#include <iterator>
+#include <vector>
 #include <iomanip>
 
 struct DataStruct {
@@ -15,16 +19,12 @@ struct DelimiterIO {
     char exp;
 };
 
+struct DoubleIO {
+    double& ref;
+};
+
 struct StringIO {
     std::string& ref;
-};
-
-struct LabelIO {
-    std::string& ref;
-};
-
-struct DoubleSciIO {
-    double& ref;
 };
 
 struct LongLongIO {
@@ -33,7 +33,7 @@ struct LongLongIO {
 
 class iofmtguard {
 public:
-    explicit iofmtguard(std::basic_ios<char>& s);
+    iofmtguard(std::basic_ios<char>& s);
     ~iofmtguard();
 private:
     std::basic_ios<char>& s_;
@@ -44,11 +44,11 @@ private:
 };
 
 std::istream& operator>>(std::istream& in, DelimiterIO&& dest);
+std::istream& operator>>(std::istream& in, DoubleIO&& dest);
 std::istream& operator>>(std::istream& in, StringIO&& dest);
-std::istream& operator>>(std::istream& in, LabelIO&& dest);
-std::istream& operator>>(std::istream& in, DoubleSciIO&& dest);
 std::istream& operator>>(std::istream& in, LongLongIO&& dest);
 std::istream& operator>>(std::istream& in, DataStruct& dest);
-std::ostream& operator<<(std::ostream& out, const DataStruct& src);
+std::ostream& operator<<(std::ostream& os, const DataStruct& data);
+bool compareDataStruct(const DataStruct& a, const DataStruct& b);
 
 #endif
