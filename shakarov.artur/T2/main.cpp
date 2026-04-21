@@ -8,6 +8,8 @@
 #include <limits>
 #include <cmath>
 #include <cstdlib>
+#include <cctype>
+#include <sstream>
 
 struct DataStruct {
     long long key1;
@@ -53,25 +55,23 @@ bool compareDataStruct(const DataStruct& a, const DataStruct& b);
 
 int main() {
     std::vector<DataStruct> data;
-
-    while (true) {
-        std::copy(std::istream_iterator<DataStruct>(std::cin),
-                  std::istream_iterator<DataStruct>(),
-                  std::back_inserter(data));
-
-        if (std::cin.eof()) {
-            break;
-        }
-        if (std::cin.fail()) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::string line;
+    
+    while (std::getline(std::cin, line)) {
+        if (line.empty()) continue;
+        std::istringstream ss(line);
+        DataStruct tmp;
+        if (ss >> tmp) {
+            data.push_back(tmp);
         }
     }
-
+    
     std::sort(data.begin(), data.end(), compareDataStruct);
-
-    std::copy(data.begin(), data.end(), std::ostream_iterator<DataStruct>(std::cout, "\n"));
-
+    
+    for (const auto& d : data) {
+        std::cout << d << "\n";
+    }
+    
     return EXIT_SUCCESS;
 }
 
@@ -96,23 +96,20 @@ std::istream& operator>>(std::istream& in, SllIO&& dest) {
 
     std::streampos pos = in.tellg();
     char c1, c2;
-    if (in.get(c1)) {
-        if (in.get(c2)) {
-            if ((c1 == 'l' || c1 == 'L') && (c2 == 'l' || c2 == 'L')) {
-                // Суффикс есть, проверяем разделитель
-                if (in.peek() != ':' && in.peek() != ')' && !std::isspace(in.peek())) {
-                    in.setstate(std::ios::failbit);
-                }
-            } else {
-                in.clear();
-                in.seekg(pos);
+    if (in.get(c1) && in.get(c2)) {
+        if ((c1 == 'l' || c1 == 'L') && (c2 == 'l' || c2 == 'L')) {
+            char next = in.peek();
+            if (next != ':' && next != ')' && !std::isspace(next)) {
+                in.setstate(std::ios::failbit);
             }
         } else {
             in.clear();
             in.seekg(pos);
         }
+    } else {
+        in.clear();
+        in.seekg(pos);
     }
-
     return in;
 }
 
@@ -121,9 +118,7 @@ std::istream& operator>>(std::istream& in, CmpIO&& dest) {
     if (!sentry) return in;
 
     double re = 0.0, im = 0.0;
-
     in >> DelimiterIO{ '#' } >> DelimiterIO{ 'c' } >> DelimiterIO{ '(' } >> re >> im >> DelimiterIO{ ')' };
-
     if (in) {
         dest.ref = std::complex<double>(re, im);
     }
@@ -137,7 +132,6 @@ std::istream& operator>>(std::istream& in, StrIO&& dest) {
     if (!(in >> DelimiterIO{ '"' })) {
         return in;
     }
-
     std::getline(in, dest.ref, '"');
     if (!in || in.eof()) {
         in.setstate(std::ios::failbit);
@@ -160,7 +154,6 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
         in >> DelimiterIO{ ':' };
         if (!in) return in;
 
-        // Читаем ключ как строку
         std::string key;
         char ch;
         while (in.get(ch) && std::isalpha(static_cast<unsigned char>(ch))) {
@@ -209,7 +202,6 @@ std::istream& operator>>(std::istream& in, DataStruct& dest) {
     } else {
         in.setstate(std::ios::failbit);
     }
-
     return in;
 }
 
@@ -225,16 +217,11 @@ std::ostream& operator<<(std::ostream& out, const DataStruct& src) {
 }
 
 bool compareDataStruct(const DataStruct& a, const DataStruct& b) {
-    if (a.key1 != b.key1)
-        return a.key1 < b.key1;
-
+    if (a.key1 != b.key1) return a.key1 < b.key1;
     double absA = std::abs(a.key2);
     double absB = std::abs(b.key2);
     const double eps = 1e-9;
-
-    if (std::abs(absA - absB) > eps)
-        return absA < absB;
-
+    if (std::abs(absA - absB) > eps) return absA < absB;
     return a.key3.length() < b.key3.length();
 }
 
