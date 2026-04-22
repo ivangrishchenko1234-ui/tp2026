@@ -55,9 +55,7 @@ bool compareVertexes(const Polygon& a, const Polygon& b) {
 
 struct AreaSummator {
     std::function<bool(const Polygon&)> filter;
-
     AreaSummator(std::function<bool(const Polygon&)> f) : filter(f) {}
-
     double operator()(double acc, const Polygon& p) const {
         return filter(p) ? acc + getArea(p) : acc;
     }
@@ -80,21 +78,17 @@ struct SeqState {
     Polygon target;
     int current_max;
     int current_run;
-
     SeqState(Polygon t) : target(t), current_max(0), current_run(0) {}
-
     bool isSame(const Polygon& p1, const Polygon& p2) const {
         if (p1.points.size() != p2.points.size()) return false;
         return std::equal(p1.points.begin(), p1.points.end(), p2.points.begin(),
             [](Point a, Point b){ return a.x == b.x && a.y == b.y; });
     }
-
     SeqState& operator+(const Polygon& p) {
         if (isSame(p, target)) {
             current_run++;
             if (current_run > current_max) current_max = current_run;
-        }
-        else {
+        } else {
             current_run = 0;
         }
         return *this;
@@ -117,11 +111,7 @@ Polygon parsePolygon(const std::string& line) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Error: No filename" << std::endl;
-        return 1;
-    }
-
+    if (argc < 2) return 1;
     std::ifstream file(argv[1]);
     if (!file) return 1;
 
@@ -135,72 +125,73 @@ int main(int argc, char* argv[]) {
 
     std::string cmd;
     while (std::cin >> cmd) {
-        if (cmd == "AREA") {
-            std::string sub; std::cin >> sub;
-            double res = 0;
-            if (sub == "ODD")
-                res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator(isVertexCountOdd));
-            else if (sub == "EVEN")
-                res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator(isVertexCountEven));
-            else if (sub == "MEAN") {
-                if (container.empty()) { std::cout << "<INVALID COMMAND>" << std::endl; continue; }
-                res = std::accumulate(container.begin(), container.end(), 0.0,
-                 AreaSummator([](const Polygon&){return true;})) / container.size();
+        try {
+            if (cmd == "AREA") {
+                std::string sub; std::cin >> sub;
+                double res = 0;
+                if (sub == "ODD")
+                    res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator(isVertexCountOdd));
+                else if (sub == "EVEN")
+                    res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator(isVertexCountEven));
+                else if (sub == "MEAN") {
+                    if (container.empty()) throw std::invalid_argument("");
+                    res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator([](const Polygon&){return true;})) / container.size();
+                } else {
+                    size_t n = std::stoul(sub);
+                    if (n < 3) throw std::invalid_argument("");
+                    res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator(std::bind(isVertexCountEqual, _1, n)));
+                }
+                std::cout << std::fixed << std::setprecision(1) << res << std::endl;
             }
-            else if(std::stoul(sub) > 2) {
-                size_t n = std::stoul(sub);
-                res = std::accumulate(container.begin(), container.end(), 0.0, AreaSummator(std::bind(isVertexCountEqual, _1, n)));
+
+
+            else if (cmd == "MAX") {
+                std::string sub; std::cin >> sub;
+                if (container.empty()) throw std::invalid_argument("");
+                if (sub == "AREA") {
+                    auto it = std::max_element(container.begin(), container.end(), compareArea);
+                    std::cout << std::fixed << std::setprecision(1) << getArea(*it) << std::endl;
+                } else if (sub == "VERTEXES") {
+                    auto it = std::max_element(container.begin(), container.end(), compareVertexes);
+                    std::cout << it->points.size() << std::endl;
+                } else throw std::invalid_argument("");
             }
-            std::cout << std::fixed << std::setprecision(1) << res << std::endl;
+
+
+            else if (cmd == "COUNT") {
+                std::string sub; std::cin >> sub;
+                if (sub == "ODD") std::cout << std::count_if(container.begin(), container.end(), isVertexCountOdd) << std::endl;
+                else if (sub == "EVEN") std::cout << std::count_if(container.begin(), container.end(), isVertexCountEven) << std::endl;
+                else {
+                    size_t n = std::stoul(sub);
+                    if (n < 3) throw std::invalid_argument("");
+                    std::cout << std::count_if(container.begin(), container.end(), std::bind(isVertexCountEqual, _1, n)) << std::endl;
+                }
+            }
+
+
+            else if (cmd == "RECTS") {
+                std::cout << std::count_if(container.begin(), container.end(), IsRectangle()) << std::endl;
+            }
+
+
+            else if (cmd == "MAXSEQ") {
+                std::string pLine; std::getline(std::cin >> std::ws, pLine);
+                Polygon target = parsePolygon(pLine);
+                if (target.points.empty()) throw std::invalid_argument("");
+                SeqState finalState = std::accumulate(container.begin(), container.end(), SeqState(target), std::bind(&SeqState::operator+, _1, _2));
+                std::cout << finalState.current_max << std::endl;
+            }
+
+
             else {
-                std::cout << "<INVALID COMMAND>" << std::endl;
-                std::getline(std::cin, line);
+                throw std::invalid_argument("");
             }
-        }
-        else if (cmd == "MAX") {
-            std::string sub; std::cin >> sub;
-            if (container.empty()) { std::cout << "<INVALID COMMAND>" << std::endl; continue; }
-            if (sub == "AREA") {
-                auto it = std::max_element(container.begin(), container.end(), compareArea);
-                std::cout << std::fixed << std::setprecision(1) << getArea(*it) << std::endl;
-            }
-            else {
-                auto it = std::max_element(container.begin(), container.end(), compareVertexes);
-                std::cout << it->points.size() << std::endl;
-            }
-        }
-        else if (cmd == "COUNT") {
-            std::string sub; std::cin >> sub;
-            if (sub == "ODD") std::cout << std::count_if(container.begin(), container.end(), isVertexCountOdd) << std::endl;
-            else if (sub == "EVEN") std::cout << std::count_if(container.begin(), container.end(), isVertexCountEven) << std::endl;
-            else if (std::stoul(sub) > 2){
-                std::cout << std::count_if(container.begin(), container.end(),
-                std::bind(isVertexCountEqual, _1, std::stoul(sub))) << std::endl;
-            }
-            else {
-                std::cout << "<INVALID COMMAND>" << std::endl;
-                std::getline(std::cin, line);
-            }
-        }
-        else if (cmd == "RECTS") {
-            std::cout << std::count_if(container.begin(), container.end(), IsRectangle()) << std::endl;
-        }
-        else if (cmd == "MAXSEQ") {
-            std::string pLine; std::getline(std::cin, pLine);
-            Polygon target = parsePolygon(pLine);
-            SeqState finalState = std::accumulate(container.begin(), container.end(), SeqState(target),
-                std::bind(&SeqState::operator+, _1, _2));
-            if(finalState.current_max != 0) std::cout << finalState.current_max << std::endl;
-            else{
-                std::cout << "<INVALID COMMAND>" << std::endl;
-                std::getline(std::cin, line);
-            }
-        }
-        else {
+        } catch (...) {
             std::cout << "<INVALID COMMAND>" << std::endl;
+            std::cin.clear();
             std::getline(std::cin, line);
         }
     }
-
     return 0;
 }
