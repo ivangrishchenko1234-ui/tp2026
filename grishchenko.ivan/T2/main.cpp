@@ -3,11 +3,9 @@
 #include <string>
 #include <algorithm>
 #include <iterator>
-#include <sstream>
 #include <complex>
-#include <cctype>
 #include <iomanip>
-#include <regex>
+#include <sstream>
 
 struct DataStruct {
     unsigned long long key1;
@@ -20,17 +18,9 @@ struct DataStruct {
 };
 
 bool parse_ull_hex(const std::string& s, unsigned long long& value) {
-    if (s.empty()) return false;
-    std::string tmp = s;
-    if (tmp.front() == ':') tmp.erase(0, 1);
-    if (tmp.back() == ':') tmp.pop_back();
-
-    std::regex hex_regex(R"(^(0[xX][0-9A-Fa-f]+)$)", std::regex::ECMAScript);
-    std::smatch match;
-    if (!std::regex_match(tmp, match, hex_regex)) return false;
-
+    if (s.length() < 3 || s[0] != '0' || (s[1] != 'x' && s[1] != 'X')) return false;
     try {
-        value = std::stoull(match[1].str(), nullptr, 16);
+        value = std::stoull(s.substr(2), nullptr, 16);
         return true;
     } catch (...) {
         return false;
@@ -38,12 +28,13 @@ bool parse_ull_hex(const std::string& s, unsigned long long& value) {
 }
 
 bool parse_complex(const std::string& s, std::complex<double>& value) {
-    std::regex cmplx_regex(R"(#c\(([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\))");
-    std::smatch match;
-    if (!std::regex_search(s, match, cmplx_regex)) return false;
+    if (s.length() < 5 || s.substr(0, 3) != "#c(" || s.back() != ')') return false;
+    std::string inner = s.substr(3, s.length() - 4);
+    size_t space = inner.find(' ');
+    if (space == std::string::npos) return false;
     try {
-        double re = std::stod(match[1].str());
-        double im = std::stod(match[2].str());
+        double re = std::stod(inner.substr(0, space));
+        double im = std::stod(inner.substr(space + 1));
         value = std::complex<double>(re, im);
         return true;
     } catch (...) {
@@ -51,10 +42,18 @@ bool parse_complex(const std::string& s, std::complex<double>& value) {
     }
 }
 
+std::string extract_quoted(const std::string& s, size_t start) {
+    size_t first_quote = s.find('"', start);
+    if (first_quote == std::string::npos) return "";
+    size_t second_quote = s.find('"', first_quote + 1);
+    if (second_quote == std::string::npos) return "";
+    return s.substr(first_quote + 1, second_quote - first_quote - 1);
+}
+
 std::istream& operator>>(std::istream& in, DataStruct& ds) {
     std::string line;
     if (!std::getline(in, line)) return in;
-
+    
     size_t start = line.find_first_not_of(" \t");
     if (start == std::string::npos) {
         in.setstate(std::ios::failbit);
@@ -64,33 +63,54 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
         in.setstate(std::ios::failbit);
         return in;
     }
-
-    std::regex key1_regex(R"(:key1\s+(0[xX][0-9A-Fa-f]+))");
-    std::regex key2_regex(R"(:key2\s+(#c\([^)]+\)))");
-    std::regex key3_regex(R"(:key3\s+\"([^\"]*)\")");
-
-    std::smatch m1, m2, m3;
-    std::string whole(line.begin() + 1, line.end() - 1);
-
-    bool ok1 = std::regex_search(whole, m1, key1_regex);
-    bool ok2 = std::regex_search(whole, m2, key2_regex);
-    bool ok3 = std::regex_search(whole, m3, key3_regex);
-
-    if (!ok1 || !ok2 || !ok3) {
+    
+    std::string content = line.substr(start + 1, line.length() - start - 2);
+    
+    unsigned long long k1 = 0;
+    std::complex<double> k2(0, 0);
+    std::string k3;
+    
+    bool found1 = false, found2 = false, found3 = false;
+    
+    size_t pos = 0;
+    while (pos < content.length()) {
+        size_t colon = content.find(':', pos);
+        if (colon == std::string::npos) break;
+        
+        size_t space = content.find(' ', colon + 1);
+        if (space == std::string::npos) break;
+        
+        std::string key = content.substr(colon + 1, space - colon - 1);
+        
+        size_t next_colon = content.find(':', space + 1);
+        std::string value;
+        if (next_colon == std::string::npos) {
+            value = content.substr(space + 1);
+        } else {
+            value = content.substr(space + 1, next_colon - space - 1);
+        }
+        
+        if (key == "key1") {
+            if (parse_ull_hex(value, k1)) found1 = true;
+        } else if (key == "key2") {
+            if (parse_complex(value, k2)) found2 = true;
+        } else if (key == "key3") {
+            k3 = extract_quoted(content, space + 1);
+            if (!k3.empty()) found3 = true;
+        }
+        
+        if (next_colon == std::string::npos) break;
+        pos = next_colon;
+    }
+    
+    if (!found1 || !found2 || !found3) {
         in.setstate(std::ios::failbit);
         return in;
     }
-
-    unsigned long long k1;
-    std::complex<double> k2;
-    if (!parse_ull_hex(m1[1].str(), k1) || !parse_complex(m2[1].str(), k2)) {
-        in.setstate(std::ios::failbit);
-        return in;
-    }
-
+    
     ds.key1 = k1;
     ds.key2 = k2;
-    ds.key3 = m3[1].str();
+    ds.key3 = k3;
     return in;
 }
 
@@ -112,15 +132,11 @@ bool comparator(const DataStruct& a, const DataStruct& b) {
 
 int main() {
     std::vector<DataStruct> data;
-
     std::copy(std::istream_iterator<DataStruct>(std::cin),
               std::istream_iterator<DataStruct>(),
               std::back_inserter(data));
-
     std::sort(data.begin(), data.end(), comparator);
-
     std::copy(data.begin(), data.end(),
               std::ostream_iterator<DataStruct>(std::cout, "\n"));
-
     return 0;
 }
