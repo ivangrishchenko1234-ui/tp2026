@@ -42,14 +42,6 @@ bool parse_complex(const std::string& s, std::complex<double>& value) {
     }
 }
 
-std::string extract_quoted(const std::string& s, size_t start) {
-    size_t first_quote = s.find('"', start);
-    if (first_quote == std::string::npos) return "";
-    size_t second_quote = s.find('"', first_quote + 1);
-    if (second_quote == std::string::npos) return "";
-    return s.substr(first_quote + 1, second_quote - first_quote - 1);
-}
-
 std::istream& operator>>(std::istream& in, DataStruct& ds) {
     std::string line;
     if (!std::getline(in, line)) return in;
@@ -69,38 +61,47 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
     unsigned long long k1 = 0;
     std::complex<double> k2(0, 0);
     std::string k3;
-
     bool found1 = false, found2 = false, found3 = false;
 
-    size_t pos = 0;
-    while (pos < content.length()) {
-        size_t colon = content.find(':', pos);
-        if (colon == std::string::npos) break;
+    size_t i = 0;
+    while (i < content.length()) {
+        if (content[i] != ':') {
+            i++;
+            continue;
+        }
+        i++;
+        size_t key_start = i;
+        while (i < content.length() && content[i] != ' ') {
+            i++;
+        }
+        std::string key = content.substr(key_start, i - key_start);
+        while (i < content.length() && content[i] == ' ') {
+            i++;
+        }
+        size_t value_start = i;
 
-        size_t space = content.find(' ', colon + 1);
-        if (space == std::string::npos) break;
-
-        std::string key = content.substr(colon + 1, space - colon - 1);
-
-        size_t next_colon = content.find(':', space + 1);
-        std::string value;
-        if (next_colon == std::string::npos) {
-            value = content.substr(space + 1);
+        if (key == "key3") {
+            if (content[i] == '"') {
+                i++;
+                size_t str_start = i;
+                while (i < content.length() && content[i] != '"') {
+                    i++;
+                }
+                k3 = content.substr(str_start, i - str_start);
+                i++;
+                found3 = true;
+            }
         } else {
-            value = content.substr(space + 1, next_colon - space - 1);
+            while (i < content.length() && content[i] != ':') {
+                i++;
+            }
+            std::string value = content.substr(value_start, i - value_start);
+            if (key == "key1") {
+                if (parse_ull_hex(value, k1)) found1 = true;
+            } else if (key == "key2") {
+                if (parse_complex(value, k2)) found2 = true;
+            }
         }
-
-        if (key == "key1") {
-            if (parse_ull_hex(value, k1)) found1 = true;
-        } else if (key == "key2") {
-            if (parse_complex(value, k2)) found2 = true;
-        } else if (key == "key3") {
-            k3 = extract_quoted(content, space + 1);
-            if (!k3.empty()) found3 = true;
-        }
-
-        if (next_colon == std::string::npos) break;
-        pos = next_colon;
     }
 
     if (!found1 || !found2 || !found3) {
