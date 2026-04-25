@@ -42,7 +42,7 @@ bool parse_line(const std::string& line, DataStruct& ds) {
     std::regex record_regex(R"(\(:key1\s+([^:]+):key2\s+([^:]+):key3\s+"([^"]*)"\))");
     std::smatch match;
     if (!std::regex_match(line, match, record_regex)) return false;
-    
+
     if (!parse_ull_hex(match[1].str(), ds.key1)) return false;
     if (!parse_complex(match[2].str(), ds.key2)) return false;
     ds.key3 = match[3].str();
@@ -53,22 +53,22 @@ int main() {
     std::vector<DataStruct> data;
     std::string line;
     bool has_supported = false;
-    
+
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
-        
+
         DataStruct ds;
         if (parse_line(line, ds)) {
             data.push_back(ds);
             has_supported = true;
         }
     }
-    
+
     if (!has_supported) {
         std::cout << "Looks like there is no supported record. Cannot determine input. Test skipped" << std::endl;
         return 0;
     }
-    
+
     std::sort(data.begin(), data.end(), [](const DataStruct& a, const DataStruct& b) {
         if (a.key1 != b.key1) return a.key1 < b.key1;
         double abs_a = std::abs(a.key2);
@@ -76,12 +76,12 @@ int main() {
         if (abs_a != abs_b) return abs_a < abs_b;
         return a.key3.length() < b.key3.length();
     });
-    
+
     for (const auto& ds : data) {
         std::cout << "(:key1 0x" << std::hex << std::uppercase << ds.key1 << std::dec << std::nouppercase;
         std::cout << ":key2 #c(" << std::fixed << std::setprecision(1) << ds.key2.real() << " " << ds.key2.imag() << ")";
         std::cout << ":key3 \"" << ds.key3 << "\":)" << std::endl;
     }
-    
+
     return 0;
 }
