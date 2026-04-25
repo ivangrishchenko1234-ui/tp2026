@@ -60,7 +60,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    
+
     size_t end = line.find_last_not_of(" \t");
     if (end == std::string::npos) {
         in.setstate(std::ios::failbit);
@@ -74,7 +74,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
     }
 
     std::string content = line.substr(1, line.length() - 2);
-    
+
     ds.key1 = 0;
     ds.key2 = std::complex<double>(0, 0);
     ds.key3 = "";
@@ -84,32 +84,32 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
     while (pos < content.length()) {
         size_t colon_pos = content.find(':', pos);
         if (colon_pos == std::string::npos) break;
-        
+
         size_t key_start = colon_pos + 1;
         size_t key_end = key_start;
         while (key_end < content.length() && std::isalnum(content[key_end])) {
             key_end++;
         }
-        
+
         if (key_start == key_end) {
             pos = colon_pos + 1;
             continue;
         }
-        
+
         std::string key = content.substr(key_start, key_end - key_start);
-        
+
         size_t value_start = key_end;
         while (value_start < content.length() && content[value_start] == ' ') {
             value_start++;
         }
-        
+
         if (value_start >= content.length()) {
             in.setstate(std::ios::failbit);
             return in;
         }
-        
+
         size_t value_end = value_start;
-        
+
         if (key == "key1") {
             while (value_end < content.length() && content[value_end] != ':' && content[value_end] != ' ') {
                 value_end++;
@@ -127,7 +127,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
                 in.setstate(std::ios::failbit);
                 return in;
             }
-            
+
             int paren_count = 0;
             bool in_paren = false;
             value_end = value_start;
@@ -145,7 +145,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
                 }
                 value_end++;
             }
-            
+
             std::string complex_val = content.substr(value_start, value_end - value_start);
             if (parse_complex(complex_val, ds.key2)) {
                 found2 = true;
@@ -159,7 +159,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
                 in.setstate(std::ios::failbit);
                 return in;
             }
-            
+
             value_end = value_start + 1;
             bool escaped = false;
             while (value_end < content.length()) {
@@ -170,7 +170,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
                 escaped = (!escaped && content[value_end] == '\\');
                 value_end++;
             }
-            
+
             ds.key3 = content.substr(value_start + 1, value_end - value_start - 2);
             found3 = true;
         }
@@ -178,7 +178,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
             in.setstate(std::ios::failbit);
             return in;
         }
-        
+
         pos = value_end;
         while (pos < content.length() && content[pos] == ' ') {
             pos++;
@@ -213,7 +213,7 @@ int main() {
     std::vector<DataStruct> data;
     std::istream_iterator<DataStruct> it(std::cin);
     std::istream_iterator<DataStruct> end;
-    
+
     while (it != end) {
         try {
             data.push_back(*it);
@@ -221,12 +221,12 @@ int main() {
         }
         ++it;
     }
-    
+
     std::sort(data.begin(), data.end(), comparator);
-    
+
     for (const auto& item : data) {
         std::cout << item << "\n";
     }
-    
+
     return 0;
 }
