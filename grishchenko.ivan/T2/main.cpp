@@ -32,7 +32,7 @@ bool parse_ull_hex(const std::string& s, unsigned long long& value) {
 bool parse_complex(const std::string& s, std::complex<double>& value) {
     std::regex cmplx_regex(R"(#c\(([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\))");
     std::smatch match;
-    if (!std::regex_search(s, match, cmplx_regex)) return false;
+    if (!std::regex_match(s, match, cmplx_regex)) return false;
     try {
         double re = std::stod(match[1].str());
         double im = std::stod(match[2].str());
@@ -56,13 +56,25 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
     if (!std::getline(in, line)) return in;
 
     size_t start = line.find_first_not_of(" \t");
-    if (start == std::string::npos || line[start] != '(' || line.back() != ')') {
+    if (start == std::string::npos) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+    
+    size_t end = line.find_last_not_of(" \t");
+    if (end == std::string::npos) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+    line = line.substr(start, end - start + 1);
+
+    if (line.empty() || line.front() != '(' || line.back() != ')') {
         in.setstate(std::ios::failbit);
         return in;
     }
 
-    std::string content = line.substr(start + 1, line.length() - start - 2);
-
+    std::string content = line.substr(1, line.length() - 2);
+    
     ds.key1 = 0;
     ds.key2 = std::complex<double>(0, 0);
     ds.key3 = "";
@@ -70,52 +82,106 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
 
     size_t pos = 0;
     while (pos < content.length()) {
-        if (content[pos] != ':') {
-            pos++;
+        size_t colon_pos = content.find(':', pos);
+        if (colon_pos == std::string::npos) break;
+        
+        size_t key_start = colon_pos + 1;
+        size_t key_end = key_start;
+        while (key_end < content.length() && std::isalnum(content[key_end])) {
+            key_end++;
+        }
+        
+        if (key_start == key_end) {
+            pos = colon_pos + 1;
             continue;
         }
-        pos++;
-
-        std::string key;
-        while (pos < content.length() && content[pos] != ' ') {
-            key += content[pos];
-            pos++;
+        
+        std::string key = content.substr(key_start, key_end - key_start);
+        
+        size_t value_start = key_end;
+        while (value_start < content.length() && content[value_start] == ' ') {
+            value_start++;
         }
-        while (pos < content.length() && content[pos] == ' ') {
-            pos++;
+        
+        if (value_start >= content.length()) {
+            in.setstate(std::ios::failbit);
+            return in;
         }
-
+        
+        size_t value_end = value_start;
+        
         if (key == "key1") {
-            size_t hex_start = pos;
-            while (pos < content.length() && content[pos] != ':') {
-                pos++;
+            while (value_end < content.length() && content[value_end] != ':' && content[value_end] != ' ') {
+                value_end++;
             }
-            std::string hex_val = content.substr(hex_start, pos - hex_start);
-            if (parse_ull_hex(hex_val, ds.key1)) found1 = true;
+            std::string hex_val = content.substr(value_start, value_end - value_start);
+            if (parse_ull_hex(hex_val, ds.key1)) {
+                found1 = true;
+            } else {
+                in.setstate(std::ios::failbit);
+                return in;
+            }
         }
         else if (key == "key2") {
-            size_t complex_start = pos;
-            int paren_count = 0;
-            while (pos < content.length()) {
-                if (content[pos] == '(') paren_count++;
-                if (content[pos] == ')') paren_count--;
-                pos++;
-                if (paren_count == 0 && content[pos - 1] == ')') break;
+            if (content[value_start] != '#') {
+                in.setstate(std::ios::failbit);
+                return in;
             }
-            std::string complex_val = content.substr(complex_start, pos - complex_start);
-            if (parse_complex(complex_val, ds.key2)) found2 = true;
+            
+            int paren_count = 0;
+            bool in_paren = false;
+            value_end = value_start;
+            while (value_end < content.length()) {
+                if (content[value_end] == '(') {
+                    in_paren = true;
+                    paren_count++;
+                }
+                if (content[value_end] == ')') {
+                    paren_count--;
+                    if (paren_count == 0 && in_paren) {
+                        value_end++;
+                        break;
+                    }
+                }
+                value_end++;
+            }
+            
+            std::string complex_val = content.substr(value_start, value_end - value_start);
+            if (parse_complex(complex_val, ds.key2)) {
+                found2 = true;
+            } else {
+                in.setstate(std::ios::failbit);
+                return in;
+            }
         }
         else if (key == "key3") {
-            ds.key3 = extract_quoted(content, pos);
-            if (!ds.key3.empty()) {
-                found3 = true;
-                pos = content.find('"', pos) + ds.key3.length() + 2;
+            if (content[value_start] != '"') {
+                in.setstate(std::ios::failbit);
+                return in;
             }
+            
+            value_end = value_start + 1;
+            bool escaped = false;
+            while (value_end < content.length()) {
+                if (!escaped && content[value_end] == '"') {
+                    value_end++;
+                    break;
+                }
+                escaped = (!escaped && content[value_end] == '\\');
+                value_end++;
+            }
+            
+            ds.key3 = content.substr(value_start + 1, value_end - value_start - 2);
+            found3 = true;
         }
         else {
-            while (pos < content.length() && content[pos] != ':') {
-                pos++;
-            }
+            in.setstate(std::ios::failbit);
+            return in;
+        }
+        
+        pos = value_end;
+        while (pos < content.length() && content[pos] == ' ') {
+            pos++;
         }
     }
 
@@ -139,17 +205,28 @@ bool comparator(const DataStruct& a, const DataStruct& b) {
     if (a.key1 != b.key1) return a.key1 < b.key1;
     double abs_a = a.key2_abs();
     double abs_b = b.key2_abs();
-    if (abs_a != abs_b) return abs_a < abs_b;
+    if (std::abs(abs_a - abs_b) > 1e-9) return abs_a < abs_b;
     return a.key3.length() < b.key3.length();
 }
 
 int main() {
     std::vector<DataStruct> data;
-    std::copy(std::istream_iterator<DataStruct>(std::cin),
-              std::istream_iterator<DataStruct>(),
-              std::back_inserter(data));
+    std::istream_iterator<DataStruct> it(std::cin);
+    std::istream_iterator<DataStruct> end;
+    
+    while (it != end) {
+        try {
+            data.push_back(*it);
+        } catch (...) {
+        }
+        ++it;
+    }
+    
     std::sort(data.begin(), data.end(), comparator);
-    std::copy(data.begin(), data.end(),
-              std::ostream_iterator<DataStruct>(std::cout, "\n"));
+    
+    for (const auto& item : data) {
+        std::cout << item << "\n";
+    }
+    
     return 0;
 }
