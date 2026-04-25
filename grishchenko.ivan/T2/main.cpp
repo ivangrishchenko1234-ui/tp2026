@@ -53,7 +53,7 @@ std::string extract_quoted(const std::string& s, size_t start) {
 std::istream& operator>>(std::istream& in, DataStruct& ds) {
     std::string line;
     if (!std::getline(in, line)) return in;
-    
+
     size_t start = line.find_first_not_of(" \t");
     if (start == std::string::npos) {
         in.setstate(std::ios::failbit);
@@ -63,25 +63,25 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    
+
     std::string content = line.substr(start + 1, line.length() - start - 2);
-    
+
     unsigned long long k1 = 0;
     std::complex<double> k2(0, 0);
     std::string k3;
-    
+
     bool found1 = false, found2 = false, found3 = false;
-    
+
     size_t pos = 0;
     while (pos < content.length()) {
         size_t colon = content.find(':', pos);
         if (colon == std::string::npos) break;
-        
+
         size_t space = content.find(' ', colon + 1);
         if (space == std::string::npos) break;
-        
+
         std::string key = content.substr(colon + 1, space - colon - 1);
-        
+
         size_t next_colon = content.find(':', space + 1);
         std::string value;
         if (next_colon == std::string::npos) {
@@ -89,7 +89,7 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
         } else {
             value = content.substr(space + 1, next_colon - space - 1);
         }
-        
+
         if (key == "key1") {
             if (parse_ull_hex(value, k1)) found1 = true;
         } else if (key == "key2") {
@@ -98,16 +98,16 @@ std::istream& operator>>(std::istream& in, DataStruct& ds) {
             k3 = extract_quoted(content, space + 1);
             if (!k3.empty()) found3 = true;
         }
-        
+
         if (next_colon == std::string::npos) break;
         pos = next_colon;
     }
-    
+
     if (!found1 || !found2 || !found3) {
         in.setstate(std::ios::failbit);
         return in;
     }
-    
+
     ds.key1 = k1;
     ds.key2 = k2;
     ds.key3 = k3;
