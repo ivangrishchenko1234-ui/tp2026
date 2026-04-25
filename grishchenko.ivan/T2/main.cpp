@@ -5,101 +5,151 @@
 #include <iterator>
 #include <complex>
 #include <iomanip>
-
-using namespace std;
+#include <sstream>
+#include <cctype>
+#include <regex>
 
 struct DataStruct {
     unsigned long long key1;
-    complex<double> key2;
-    string key3;
+    std::complex<double> key2;
+    std::string key3;
+
+    double key2_abs() const {
+        return std::abs(key2);
+    }
 };
 
-istream& operator>>(istream& in, DataStruct& ds) {
-    string line;
-    if (!getline(in, line)) return in;
-    
-    ds.key1 = 0;
-    ds.key2 = complex<double>(0,0);
-    ds.key3 = "";
-    
-    size_t pos = line.find('(');
-    if (pos == string::npos) {
-        in.setstate(ios::failbit);
+bool parse_ull_hex(const std::string& s, unsigned long long& value) {
+    if (s.length() < 3 || s[0] != '0' || (s[1] != 'x' && s[1] != 'X')) return false;
+    try {
+        value = std::stoull(s.substr(2), nullptr, 16);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool parse_complex(const std::string& s, std::complex<double>& value) {
+    std::regex cmplx_regex(R"(#c\(([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\))");
+    std::smatch match;
+    if (!std::regex_search(s, match, cmplx_regex)) return false;
+    try {
+        double re = std::stod(match[1].str());
+        double im = std::stod(match[2].str());
+        value = std::complex<double>(re, im);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+std::string extract_quoted(const std::string& s, size_t start) {
+    size_t first_quote = s.find('"', start);
+    if (first_quote == std::string::npos) return "";
+    size_t second_quote = s.find('"', first_quote + 1);
+    if (second_quote == std::string::npos) return "";
+    return s.substr(first_quote + 1, second_quote - first_quote - 1);
+}
+
+std::istream& operator>>(std::istream& in, DataStruct& ds) {
+    std::string line;
+    if (!std::getline(in, line)) return in;
+
+    size_t start = line.find_first_not_of(" \t");
+    if (start == std::string::npos || line[start] != '(' || line.back() != ')') {
+        in.setstate(std::ios::failbit);
         return in;
     }
-    
-    pos++;
-    while (pos < line.length() && line[pos] != ')') {
-        if (line[pos] != ':') { pos++; continue; }
+
+    std::string content = line.substr(start + 1, line.length() - start - 2);
+
+    ds.key1 = 0;
+    ds.key2 = std::complex<double>(0, 0);
+    ds.key3 = "";
+    bool found1 = false, found2 = false, found3 = false;
+
+    size_t pos = 0;
+    while (pos < content.length()) {
+        if (content[pos] != ':') {
+            pos++;
+            continue;
+        }
         pos++;
-        
-        string field;
-        while (pos < line.length() && line[pos] != ' ') {
-            field += line[pos];
+
+        std::string key;
+        while (pos < content.length() && content[pos] != ' ') {
+            key += content[pos];
             pos++;
         }
-        while (pos < line.length() && line[pos] == ' ') pos++;
-        
-        if (field == "key1") {
-            if (line[pos] == '0' && (line[pos+1] == 'x' || line[pos+1] == 'X')) {
-                ds.key1 = stoull(line.substr(pos+2), nullptr, 16);
-            }
-            while (pos < line.length() && line[pos] != ':') pos++;
+        while (pos < content.length() && content[pos] == ' ') {
+            pos++;
         }
-        else if (field == "key2") {
-            if (line[pos] == '#' && line[pos+1] == 'c' && line[pos+2] == '(') {
-                pos += 3;
-                string re_str, im_str;
-                while (pos < line.length() && line[pos] != ' ') {
-                    re_str += line[pos];
-                    pos++;
-                }
-                while (pos < line.length() && line[pos] == ' ') pos++;
-                while (pos < line.length() && line[pos] != ')') {
-                    im_str += line[pos];
-                    pos++;
-                }
-                if (line[pos] == ')') pos++;
-                ds.key2 = complex<double>(stod(re_str), stod(im_str));
-            }
-            while (pos < line.length() && line[pos] != ':') pos++;
-        }
-        else if (field == "key3") {
-            if (line[pos] == '"') {
+
+        if (key == "key1") {
+            size_t hex_start = pos;
+            while (pos < content.length() && content[pos] != ':') {
                 pos++;
-                while (pos < line.length() && line[pos] != '"') {
-                    ds.key3 += line[pos];
-                    pos++;
-                }
-                if (line[pos] == '"') pos++;
+            }
+            std::string hex_val = content.substr(hex_start, pos - hex_start);
+            if (parse_ull_hex(hex_val, ds.key1)) found1 = true;
+        }
+        else if (key == "key2") {
+            size_t complex_start = pos;
+            int paren_count = 0;
+            while (pos < content.length()) {
+                if (content[pos] == '(') paren_count++;
+                if (content[pos] == ')') paren_count--;
+                pos++;
+                if (paren_count == 0 && content[pos - 1] == ')') break;
+            }
+            std::string complex_val = content.substr(complex_start, pos - complex_start);
+            if (parse_complex(complex_val, ds.key2)) found2 = true;
+        }
+        else if (key == "key3") {
+            ds.key3 = extract_quoted(content, pos);
+            if (!ds.key3.empty()) {
+                found3 = true;
+                pos = content.find('"', pos) + ds.key3.length() + 2;
+            }
+        }
+        else {
+            while (pos < content.length() && content[pos] != ':') {
+                pos++;
             }
         }
     }
+
+    if (!found1 || !found2 || !found3) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+
     return in;
 }
 
-ostream& operator<<(ostream& out, const DataStruct& ds) {
-    out << "(:key1 0x" << uppercase << hex << ds.key1 << dec << nouppercase;
-    out << ":key2 #c(" << fixed << setprecision(1) << ds.key2.real() 
+std::ostream& operator<<(std::ostream& out, const DataStruct& ds) {
+    out << "(:key1 0x" << std::uppercase << std::hex << ds.key1 << std::dec << std::nouppercase;
+    out << ":key2 #c(" << std::fixed << std::setprecision(1) << ds.key2.real()
         << " " << ds.key2.imag() << ")";
     out << ":key3 \"" << ds.key3 << "\":)";
     return out;
 }
 
-bool cmp(const DataStruct& a, const DataStruct& b) {
+bool comparator(const DataStruct& a, const DataStruct& b) {
     if (a.key1 != b.key1) return a.key1 < b.key1;
-    double aa = abs(a.key2);
-    double bb = abs(b.key2);
-    if (aa != bb) return aa < bb;
+    double abs_a = a.key2_abs();
+    double abs_b = b.key2_abs();
+    if (abs_a != abs_b) return abs_a < abs_b;
     return a.key3.length() < b.key3.length();
 }
 
 int main() {
-    vector<DataStruct> v;
-    copy(istream_iterator<DataStruct>(cin),
-         istream_iterator<DataStruct>(),
-         back_inserter(v));
-    sort(v.begin(), v.end(), cmp);
-    copy(v.begin(), v.end(), ostream_iterator<DataStruct>(cout, "\n"));
+    std::vector<DataStruct> data;
+    std::copy(std::istream_iterator<DataStruct>(std::cin),
+              std::istream_iterator<DataStruct>(),
+              std::back_inserter(data));
+    std::sort(data.begin(), data.end(), comparator);
+    std::copy(data.begin(), data.end(),
+              std::ostream_iterator<DataStruct>(std::cout, "\n"));
     return 0;
 }
