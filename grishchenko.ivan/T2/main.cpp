@@ -31,7 +31,7 @@ std::istream& operator>>(std::istream& in, DataStruct& d) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DataStruct& d) {
-    out << "(:key1 #c(" << d.key1.real() << " " << d.key1.imag() << "):key2 (:n " 
+    out << "(:key1 #c(" << d.key1.real() << " " << d.key1.imag() << "):key2 (:n "
         << d.key2.first << ":d " << d.key2.second << ":):key3 \"" << d.key3 << "\":)";
     return out;
 }
