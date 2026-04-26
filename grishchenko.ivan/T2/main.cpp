@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -14,13 +16,13 @@ struct DataStruct {
 };
 
 std::istream& operator>>(std::istream& in, DataStruct& d) {
-    std::string line; double r, i; long long n; unsigned long long dn; char str[1000];
+    std::string line; double r,i; long long n; unsigned long long dn; char str[1000];
     while (std::getline(in, line))
-        if (sscanf_s(line.c_str(), "(:key1 #c(%lf %lf):key2 (:n %lld:d %llu:):key3 \"%[^\"]\"", &r, &i, &n, &dn, str, (unsigned)sizeof(str)) == 5 ||
-            sscanf_s(line.c_str(), "(:key2 (:n %lld:d %llu:):key1 #c(%lf %lf):key3 \"%[^\"]\"", &n, &dn, &r, &i, str, (unsigned)sizeof(str)) == 5 ||
-            sscanf_s(line.c_str(), "(:key3 \"%[^\"]\":key1 #c(%lf %lf):key2 (:n %lld:d %llu:):", str, (unsigned)sizeof(str), &r, &i, &n, &dn) == 5) {
+        if (sscanf(line.c_str(), "(:key1 #c(%lf %lf):key2 (:n %lld:d %llu:):key3 \"%[^\"]\"", &r, &i, &n, &dn, str) == 5 ||
+            sscanf(line.c_str(), "(:key2 (:n %lld:d %llu:):key1 #c(%lf %lf):key3 \"%[^\"]\"", &n, &dn, &r, &i, str) == 5 ||
+            sscanf(line.c_str(), "(:key3 \"%[^\"]\":key1 #c(%lf %lf):key2 (:n %lld:d %llu:):", str, &r, &i, &n, &dn) == 5) {
             d.key1 = std::complex<double>(r, i);
-            d.key2 = { n, dn };
+            d.key2 = {n, dn};
             d.key3 = str;
             return in;
         }
@@ -29,7 +31,7 @@ std::istream& operator>>(std::istream& in, DataStruct& d) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DataStruct& d) {
-    out << "(:key1 #c(" << d.key1.real() << " " << d.key1.imag() << "):key2 (:n "
+    out << "(:key1 #c(" << d.key1.real() << " " << d.key1.imag() << "):key2 (:n " 
         << d.key2.first << ":d " << d.key2.second << ":):key3 \"" << d.key3 << "\":)";
     return out;
 }
@@ -39,13 +41,14 @@ int main() {
     std::copy(std::istream_iterator<DataStruct>(std::cin), std::istream_iterator<DataStruct>(), std::back_inserter(v));
     if (v.empty()) return 1;
     std::sort(v.begin(), v.end(), [](const DataStruct& a, const DataStruct& b) {
-        double ma = std::abs(a.key1), mb = std::abs(b.key1);
+        double ma = std::abs(a.key1);
+        double mb = std::abs(b.key1);
         if (ma != mb) return ma < mb;
-        double ra = (double)a.key2.first / a.key2.second;
-        double rb = (double)b.key2.first / b.key2.second;
+        double ra = static_cast<double>(a.key2.first) / a.key2.second;
+        double rb = static_cast<double>(b.key2.first) / b.key2.second;
         if (ra != rb) return ra < rb;
         return a.key3.size() < b.key3.size();
-        });
+    });
     std::copy(v.begin(), v.end(), std::ostream_iterator<DataStruct>(std::cout, "\n"));
     return 0;
 }
