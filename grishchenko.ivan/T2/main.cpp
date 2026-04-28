@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <complex>
 #include <iomanip>
-#include <regex>
 #include <sstream>
+#include <map>
 
 struct DataStruct {
     unsigned long long key1;
@@ -14,38 +14,144 @@ struct DataStruct {
 };
 
 bool parse_ull_hex(const std::string& s, unsigned long long& value) {
-    std::regex hex_regex(R"(0[xX][0-9A-Fa-f]+)");
-    if (!std::regex_match(s, hex_regex)) return false;
-    try {
-        value = std::stoull(s.substr(2), nullptr, 16);
-        return true;
-    } catch (...) {
+    if (s.length() < 3 || s[0] != '0' || (s[1] != 'x' && s[1] != 'X')) 
         return false;
+    
+    value = 0;
+    for (size_t i = 2; i < s.length(); ++i) {
+        char c = s[i];
+        value <<= 4;
+        if (c >= '0' && c <= '9') value += (c - '0');
+        else if (c >= 'a' && c <= 'f') value += (c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F') value += (c - 'A' + 10);
+        else return false;
     }
+    return true;
 }
 
 bool parse_complex(const std::string& s, std::complex<double>& value) {
-    std::regex cmplx_regex(R"(#c\(([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\))");
-    std::smatch match;
-    if (!std::regex_match(s, match, cmplx_regex)) return false;
-    try {
-        double re = std::stod(match[1].str());
-        double im = std::stod(match[2].str());
-        value = std::complex<double>(re, im);
-        return true;
-    } catch (...) {
-        return false;
+    size_t start = s.find("#c(");
+    if (start == std::string::npos) return false;
+    
+    size_t end = s.rfind(')');
+    if (end == std::string::npos || end <= start + 3) return false;
+    
+    std::string inner = s.substr(start + 3, end - (start + 3));
+    
+    std::istringstream iss(inner);
+    double re, im;
+    if (!(iss >> re >> im)) return false;
+    
+    char leftover;
+    if (iss >> leftover) return false;
+    
+    value = std::complex<double>(re, im);
+    return true;
+}
+
+std::string parse_quoted_string(const std::string& str, size_t start_pos, size_t& end_pos) {
+    if (start_pos >= str.length() || str[start_pos] != '"') {
+        end_pos = start_pos;
+        return "";
     }
+    
+    std::string result;
+    size_t i = start_pos + 1;
+    
+    while (i < str.length()) {
+        if (str[i] == '\\' && i + 1 < str.length()) {
+            i++;
+            result += str[i];
+            i++;
+        } else if (str[i] == '"') {
+            end_pos = i;
+            return result;
+        } else {
+            result += str[i];
+            i++;
+        }
+    }
+    
+    end_pos = start_pos;
+    return "";
 }
 
 bool parse_line(const std::string& line, DataStruct& ds) {
-    std::regex record_regex(R"(\(:key1\s+([^:]+):key2\s+([^:]+):key3\s+"([^"]*)"\))");
-    std::smatch match;
-    if (!std::regex_match(line, match, record_regex)) return false;
-
-    if (!parse_ull_hex(match[1].str(), ds.key1)) return false;
-    if (!parse_complex(match[2].str(), ds.key2)) return false;
-    ds.key3 = match[3].str();
+    if (line.empty() || line[0] != '(' || line.length() < 3 || 
+        line.substr(line.length() - 2) != "):") {
+        return false;
+    }
+    
+    std::string content = line.substr(1, line.length() - 3);
+    std::map<std::string, std::string> fields;
+    
+    size_t pos = 0;
+    while (pos < content.length()) {
+        size_t field_start = content.find(':', pos);
+        if (field_start == std::string::npos) break;
+        
+        size_t key_end = field_start + 1;
+        while (key_end < content.length() && content[key_end] != ' ' && content[key_end] != ':') {
+            key_end++;
+        }
+        
+        std::string key = content.substr(field_start, key_end - field_start);
+        
+        size_t value_start = key_end;
+        while (value_start < content.length() && content[value_start] == ' ') {
+            value_start++;
+        }
+        
+        size_t value_end;
+        std::string value;
+        
+        if (key == ":key3") {
+            size_t quote_start = value_start;
+            if (quote_start >= content.length() || content[quote_start] != '"') {
+                return false;
+            }
+            
+            std::string unquoted = parse_quoted_string(content, quote_start, value_end);
+            if (value_end == quote_start) {
+                return false;
+            }
+            
+            value = content.substr(quote_start, value_end - quote_start + 1);
+            value_end++;
+        } else {
+            value_end = content.find(':', value_start);
+            if (value_end == std::string::npos) {
+                value_end = content.length();
+            }
+            value = content.substr(value_start, value_end - value_start);
+            
+            size_t val_start = value.find_first_not_of(" \t");
+            if (val_start != std::string::npos) {
+                size_t val_end = value.find_last_not_of(" \t");
+                value = value.substr(val_start, val_end - val_start + 1);
+            }
+        }
+        
+        fields[key] = value;
+        pos = value_end;
+        
+        if (pos < content.length() && content[pos] == ':') {
+            pos++;
+        }
+    }
+    
+    if (fields.find(":key1") == fields.end() || 
+        fields.find(":key2") == fields.end() || 
+        fields.find(":key3") == fields.end()) {
+        return false;
+    }
+    
+    if (!parse_ull_hex(fields[":key1"], ds.key1)) return false;
+    if (!parse_complex(fields[":key2"], ds.key2)) return false;
+    
+    size_t dummy;
+    ds.key3 = parse_quoted_string(fields[":key3"], 0, dummy);
+    
     return true;
 }
 
@@ -71,10 +177,9 @@ int main() {
 
     std::sort(data.begin(), data.end(), [](const DataStruct& a, const DataStruct& b) {
         if (a.key1 != b.key1) return a.key1 < b.key1;
-        double abs_a = std::abs(a.key2);
-        double abs_b = std::abs(b.key2);
-        if (abs_a != abs_b) return abs_a < abs_b;
-        return a.key3.length() < b.key3.length();
+        if (a.key2.real() != b.key2.real()) 
+            return a.key2.real() < b.key2.real();
+        return a.key2.imag() < b.key2.imag();
     });
 
     for (const auto& ds : data) {
