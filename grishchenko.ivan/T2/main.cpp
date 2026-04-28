@@ -5,11 +5,12 @@
 #include <complex>
 #include <iomanip>
 #include <sstream>
-#include <map>
+#include <iterator>
+#include <cctype>
 
 struct DataStruct {
-    unsigned long long key1;
-    std::complex<double> key2;
+    unsigned long long key1;           // ULL HEX
+    std::complex<double> key2;         // CMP LSP
     std::string key3;
 };
 
@@ -76,7 +77,8 @@ bool parse_line(const std::string& line, DataStruct& ds) {
         return false;
     }
     std::string content = line.substr(1, line.length() - 3);
-    std::map<std::string, std::string> fields;
+    std::string key1_str, key2_str, key3_str;
+    bool has_key1 = false, has_key2 = false, has_key3 = false;
     size_t pos = 0;
     while (pos < content.length()) {
         size_t field_start = content.find(':', pos);
@@ -114,50 +116,71 @@ bool parse_line(const std::string& line, DataStruct& ds) {
                 value = value.substr(val_start, val_end - val_start + 1);
             }
         }
-        fields[key] = value;
+        if (key == ":key1") {
+            key1_str = value;
+            has_key1 = true;
+        } else if (key == ":key2") {
+            key2_str = value;
+            has_key2 = true;
+        } else if (key == ":key3") {
+            key3_str = value;
+            has_key3 = true;
+        }
         pos = value_end;
         if (pos < content.length() && content[pos] == ':') {
             ++pos;
         }
     }
-    if (fields.find(":key1") == fields.end() ||
-        fields.find(":key2") == fields.end() ||
-        fields.find(":key3") == fields.end()) {
+    if (!has_key1 || !has_key2 || !has_key3) {
         return false;
     }
-    if (!parse_ull_hex(fields[":key1"], ds.key1)) return false;
-    if (!parse_complex(fields[":key2"], ds.key2)) return false;
+    if (!parse_ull_hex(key1_str, ds.key1)) return false;
+    if (!parse_complex(key2_str, ds.key2)) return false;
     size_t dummy;
-    ds.key3 = parse_quoted_string(fields[":key3"], 0, dummy);
+    ds.key3 = parse_quoted_string(key3_str, 0, dummy);
     return true;
+}
+
+std::istream& operator>>(std::istream& in, DataStruct& ds) {
+    std::string line;
+    if (!std::getline(in, line)) {
+        in.setstate(std::ios::failbit);
+        return in;
+    }
+    if (parse_line(line, ds)) {
+        return in;
+    }
+    in.setstate(std::ios::failbit);
+    return in;
+}
+
+std::ostream& operator<<(std::ostream& out, const DataStruct& ds) {
+    out << "(:key1 0x" << std::hex << std::uppercase << ds.key1 << std::dec << std::nouppercase;
+    out << ":key2 #c(" << std::fixed << std::setprecision(1) << ds.key2.real() << " " << ds.key2.imag() << ")";
+    out << ":key3 \"" << ds.key3 << "\":)";
+    return out;
+}
+
+bool compare(const DataStruct& a, const DataStruct& b) {
+    if (a.key1 != b.key1) return a.key1 < b.key1;
+    double abs_a = std::abs(a.key2);
+    double abs_b = std::abs(b.key2);
+    if (abs_a != abs_b) return abs_a < abs_b;
+    return a.key3.length() < b.key3.length();
 }
 
 int main() {
     std::vector<DataStruct> data;
-    std::string line;
-    bool has_supported = false;
-    while (std::getline(std::cin, line)) {
-        if (line.empty()) continue;
-        DataStruct ds;
-        if (parse_line(line, ds)) {
-            data.push_back(ds);
-            has_supported = true;
-        }
-    }
-    if (!has_supported) {
+    std::istream_iterator<DataStruct> in_iter(std::cin);
+    std::istream_iterator<DataStruct> end_iter;
+    std::copy_if(in_iter, end_iter, std::back_inserter(data),
+                 [](const DataStruct&) { return true; });
+    if (data.empty()) {
         std::cout << "Looks like there is no supported record. Cannot determine input. Test skipped" << std::endl;
         return 0;
     }
-    std::sort(data.begin(), data.end(), [](const DataStruct& a, const DataStruct& b) {
-        if (a.key1 != b.key1) return a.key1 < b.key1;
-        if (a.key2.real() != b.key2.real())
-            return a.key2.real() < b.key2.real();
-        return a.key2.imag() < b.key2.imag();
-    });
-    for (const auto& ds : data) {
-        std::cout << "(:key1 0x" << std::hex << std::uppercase << ds.key1 << std::dec << std::nouppercase;
-        std::cout << ":key2 #c(" << std::fixed << std::setprecision(1) << ds.key2.real() << " " << ds.key2.imag() << ")";
-        std::cout << ":key3 \"" << ds.key3 << "\":)" << std::endl;
-    }
+    std::sort(data.begin(), data.end(), compare);
+    std::ostream_iterator<DataStruct> out_iter(std::cout, "\n");
+    std::copy(data.begin(), data.end(), out_iter);
     return 0;
 }
