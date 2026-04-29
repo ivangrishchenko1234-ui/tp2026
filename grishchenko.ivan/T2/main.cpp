@@ -13,8 +13,8 @@ namespace nspace
 {
     struct DataStruct
     {
-        unsigned long long key1;           
-        std::complex<double> key2;         
+        unsigned long long key1;
+        std::complex<double> key2;
         std::string key3;
     };
 
